@@ -7,5 +7,5 @@ export default defineConfig({
   clean: true,
   sourcemap: true,
   minify: false,
-  external: ['react', 'react-dom', 'react-router-dom', 'lucide-react'],
+  external: ['react', 'react-dom', 'react-router-dom'],
 });

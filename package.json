@@ -3,23 +3,31 @@
   "version": "0.1.0",
   "description": "Type-safe routing, navigation, components, and hooks for React Router Dom",
   "main": "./dist/index.cjs",
-  "module": "./dist/index.mjs",
+  "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.cjs"
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
     }
   },
   "files": [
     "dist"
   ],
+  "sideEffects": false,
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "prepack": "pnpm run build",
+    "prepublishOnly": "pnpm run typecheck && pnpm run test"
   },
   "keywords": [
     "react",
@@ -31,9 +39,19 @@
     "router"
   ],
   "author": "AdrianTony7",
-  "repository": "https://github.com/AdrianTony7/Typed-React-Router-Dom",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AdrianTony7/Typed-React-Router-Dom.git"
+  },
+  "bugs": {
+    "url": "https://github.com/AdrianTony7/Typed-React-Router-Dom/issues"
+  },
+  "homepage": "https://github.com/AdrianTony7/Typed-React-Router-Dom#readme",
   "license": "MIT",
   "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
   "peerDependencies": {
     "react": "^18.0.0 || ^19.0.0",
     "react-dom": "^18.0.0 || ^19.0.0",
