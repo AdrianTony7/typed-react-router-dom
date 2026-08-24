@@ -5,9 +5,19 @@ import { MemoryRouter } from 'react-router-dom';
 import { AppLink } from '../src/AppLink';
 import { defineRoutes } from '../src/types';
 
+interface UserQuery {
+    tab?: 'profile' | 'settings';
+    active?: boolean;
+}
+
 const routes = defineRoutes({
     HOME: { path: '/', name: 'Home' },
-    USER_DETAIL: { path: '/users/:id', name: 'User Detail', paramKeys: ['id'] as const },
+    USER_DETAIL: {
+        path: '/users/:id',
+        name: 'User Detail',
+        paramKeys: ['id'] as const,
+        queryType: {} as UserQuery,
+    },
     USER_POST: {
         path: '/users/:userId/posts/:postId',
         name: 'User Post',
@@ -35,6 +45,20 @@ describe('<AppLink />', () => {
         );
         const link = screen.getByRole('link', { name: 'View User' });
         expect(link.getAttribute('href')).toBe('/users/42');
+    });
+
+    it('renders a link with dynamic params and query params resolved', () => {
+        renderInRouter(
+            <AppLink
+                route={routes.USER_DETAIL}
+                params={{ id: '42' }}
+                query={{ tab: 'settings', active: true }}
+            >
+                View User Settings
+            </AppLink>
+        );
+        const link = screen.getByRole('link', { name: 'View User Settings' });
+        expect(link.getAttribute('href')).toBe('/users/42?tab=settings&active=true');
     });
 
     it('renders a link with multiple dynamic params resolved', () => {

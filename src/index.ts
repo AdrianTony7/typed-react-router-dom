@@ -9,7 +9,12 @@
  *
  * const routes = defineRoutes({
  *   HOME:        { path: '/',          name: 'Home' },
- *   USER_DETAIL: { path: '/users/:id', name: 'User Detail', paramKeys: ['id'] as const },
+ *   USER_DETAIL: {
+ *     path: '/users/:id',
+ *     name: 'User Detail',
+ *     paramKeys: ['id'] as const,
+ *     queryType: {} as { tab?: 'profile' | 'settings'; page?: number }
+ *   },
  * } as const);
  *
  * export const router = createTypedRouter(routes);
@@ -21,6 +26,7 @@ export type {
     Route,
     RoutingMap,
     RouteParams,
+    RouteQueryParams,
     DynamicRouteParam,
     TypedNavigationProps,
     TypedNavigationPropsWithNewTab,
@@ -40,7 +46,12 @@ export type { AppLinkProps } from './AppLink';
 export { AppRouterService, appRouter } from './AppRouterService';
 
 // Standalone hooks
-export { useTypedNavigate, useTypedParams, useTypedMatch } from './hooks';
+export {
+    useTypedNavigate,
+    useTypedParams,
+    useTypedSearchParams,
+    useTypedMatch,
+} from './hooks';
 
 // createTypedRouter factory
 export { createTypedRouter } from './createTypedRouter';

@@ -2,15 +2,16 @@
 
 A generic, type-safe routing library for **React** + **react-router-dom**.
 
-Define your application routes once and get fully typed navigation, link components, hooks, and a programmatic router service — all with zero runtime overhead.
+Define your application routes once and get fully typed navigation, link components, hooks, typed query parameters, and a programmatic router service — all with compile-time type safety and zero runtime dependencies.
 
 ---
 
 ## Features
 
-- 🔒 **Type-safe routes** — `defineRoutes` preserves literal path types and param keys
-- 🔗 **`<AppLink />`** — a typed `<Link />` wrapper that enforces required params at compile time
-- 🪝 **React hooks** — `useTypedNavigate`, `useTypedParams`, `useTypedMatch`
+- 🔒 **Type-safe routes** — `defineRoutes` preserves literal path types, param keys, and query param types
+- 🔗 **`<AppLink />`** — a typed `<Link />` wrapper that enforces required params and typed query params
+- 🪝 **React hooks** — `useTypedNavigate`, `useTypedParams`, `useTypedSearchParams`, `useTypedMatch`
+- 🔍 **Typed Query Parameters** — declare query params with types or keys and get full autocompletion & query setters
 - 🏭 **`createTypedRouter(routes)`** — a factory for zero-boilerplate per-app routers
 - 🚀 **Programmatic navigation** — `AppRouterService` for navigating outside the React tree
 - 📦 **Dual ESM/CJS** build with bundled TypeScript declarations
@@ -37,10 +38,21 @@ npm install typed-react-router-dom react-router-dom
 // src/routes.ts
 import { defineRoutes, createTypedRouter } from 'typed-react-router-dom';
 
+interface UserDetailQuery {
+  tab?: 'profile' | 'settings' | 'activity';
+  active?: boolean;
+  page?: number;
+}
+
 export const routes = defineRoutes({
   HOME:        { path: '/',          name: 'Home' },
   ABOUT:       { path: '/about',     name: 'About' },
-  USER_DETAIL: { path: '/users/:id', name: 'User Detail', paramKeys: ['id'] as const },
+  USER_DETAIL: {
+    path: '/users/:id',
+    name: 'User Detail',
+    paramKeys: ['id'] as const,
+    queryType: {} as UserDetailQuery,
+  },
 } as const);
 
 export const router = createTypedRouter(routes);
@@ -69,12 +81,17 @@ export function NavigationSetter() {
 
 ### `defineRoutes(map)`
 
-Preserves literal string types and `paramKeys` tuples on your route map.
+Preserves literal string types, `paramKeys` tuples, and `queryType` definitions on your route map.
 
 ```ts
 const routes = defineRoutes({
   HOME:        { path: '/', name: 'Home' },
-  USER_DETAIL: { path: '/users/:id', name: 'User Detail', paramKeys: ['id'] as const },
+  USER_DETAIL: {
+    path: '/users/:id',
+    name: 'User Detail',
+    paramKeys: ['id'] as const,
+    queryType: {} as { tab?: 'profile' | 'settings'; page?: number },
+  },
 } as const);
 ```
 
@@ -88,17 +105,18 @@ const router = createTypedRouter(routes);
 
 | Member | Description |
 |---|---|
-| `router.TypedLink` | Type-safe `<Link />` component |
-| `router.getHref(route, params?)` | Constructs a URL string using `generatePath` |
-| `router.useTypedNavigate(route)` | Returns a typed navigation callback |
+| `router.TypedLink` | Type-safe `<Link />` component supporting `params` & `query` |
+| `router.getHref(route, params?, query?)` | Constructs a URL string using `generatePath` + query string serialization |
+| `router.useTypedNavigate(route)` | Returns a typed navigation callback accepting `(params, query?, newTab?)` |
 | `router.useTypedParams(route)` | Returns typed path params from the current URL |
-| `router.useTypedMatch()` | Returns matched route + params for the current URL |
+| `router.useTypedSearchParams(route?)` | Returns `[query, setQuery, searchParams]` for typed query params |
+| `router.useTypedMatch()` | Returns matched route + path params + parsed query record for the current URL |
 | `router.routerService` | `AppRouterService` instance for programmatic navigation |
 | `router.routes` | The original routes map |
 
 ---
 
-### `<AppLink route params? ...LinkProps>`
+### `<AppLink route params? query? ...LinkProps>`
 
 ```tsx
 import { AppLink } from 'typed-react-router-dom';
@@ -107,8 +125,14 @@ import { routes } from './routes';
 // Static route — no params needed
 <AppLink route={routes.HOME}>Home</AppLink>
 
-// Dynamic route — TypeScript enforces params
-<AppLink route={routes.USER_DETAIL} params={{ id: '42' }}>View User</AppLink>
+// Dynamic route with typed path & query parameters
+<AppLink
+  route={routes.USER_DETAIL}
+  params={{ id: '42' }}
+  query={{ tab: 'settings', active: true }}
+>
+  View User Settings
+</AppLink>
 ```
 
 ---
@@ -121,7 +145,34 @@ import { routes } from './routes';
 
 function UserButton({ id }: { id: string }) {
   const goToUser = useTypedNavigate(routes.USER_DETAIL);
-  return <button onClick={() => goToUser({ id })}>View Profile</button>;
+
+  return (
+    <button onClick={() => goToUser({ id }, { tab: 'profile' })}>
+      View Profile
+    </button>
+  );
+}
+```
+
+---
+
+### `useTypedSearchParams(route)`
+
+```tsx
+import { useTypedSearchParams } from 'typed-react-router-dom';
+import { routes } from './routes';
+
+function UserDetail() {
+  const [query, setQuery] = useTypedSearchParams(routes.USER_DETAIL);
+
+  return (
+    <div>
+      <p>Current Tab: {query.tab}</p>
+      <button onClick={() => setQuery({ tab: 'settings' })}>
+        Switch to Settings
+      </button>
+    </div>
+  );
 }
 ```
 
@@ -148,8 +199,13 @@ import { useTypedMatch } from 'typed-react-router-dom';
 import { routes } from './routes';
 
 function Breadcrumb() {
-  const { route, params } = useTypedMatch(routes);
-  return <span>{route?.name ?? 'Unknown'}</span>;
+  const { route, params, query } = useTypedMatch(routes);
+  return (
+    <div>
+      <span>{route?.name ?? 'Unknown'}</span>
+      <span>{query.tab}</span>
+    </div>
+  );
 }
 ```
 
@@ -162,7 +218,7 @@ import { appRouter } from 'typed-react-router-dom';
 import { routes } from './routes';
 
 // Navigate from outside a React component (e.g., in an API service):
-appRouter.navigateToRoute(routes.USER_DETAIL, { id: '42' });
+appRouter.navigateToRoute(routes.USER_DETAIL, { id: '42' }, { tab: 'profile' });
 appRouter.navigateToURL('/some-path', /* newTab */ true);
 ```
 
@@ -173,11 +229,12 @@ appRouter.navigateToURL('/some-path', /* newTab */ true);
 ```ts
 import { RouteHelper } from 'typed-react-router-dom';
 
-RouteHelper.constructHref(routes.USER_DETAIL, { id: '42' });  // '/users/42'
-RouteHelper.extractParamsFromPath(routes.USER_DETAIL, '/users/99');  // { id: '99' }
-RouteHelper.getRouteMatchByUrl(routes, '/users/5');  // routes.USER_DETAIL
-RouteHelper.getAllRoutesAsArray(routes);  // Route[]
-RouteHelper.isChildOf(routes, '/profile', '/');  // true | false
+RouteHelper.constructHref(routes.USER_DETAIL, { id: '42' }, { tab: 'settings' });  // '/users/42?tab=settings'
+RouteHelper.extractParamsFromPath(routes.USER_DETAIL, '/users/99');                 // { id: '99' }
+RouteHelper.extractQueryParams('?tab=settings&page=2');                             // { tab: 'settings', page: '2' }
+RouteHelper.getRouteMatchByUrl(routes, '/users/5');                                 // routes.USER_DETAIL
+RouteHelper.getAllRoutesAsArray(routes);                                            // Route[]
+RouteHelper.isChildOf(routes, '/profile', '/');                                     // true | false
 ```
 
 ---
@@ -185,12 +242,14 @@ RouteHelper.isChildOf(routes, '/profile', '/');  // true | false
 ## Route Interface
 
 ```ts
-interface Route {
-  path: string;                   // Route path pattern (e.g., '/users/:id')
+interface Route<TPath extends string = string, TQuery extends Record<string, any> = Record<string, any>> {
+  path: TPath;                    // Route path pattern (e.g., '/users/:id')
   name?: string;                  // Human-readable display name
   parent?: string;                // Parent route path for breadcrumbs / nesting
   icon?: ComponentType<any>;      // Optional icon component
   paramKeys?: readonly string[];  // Required dynamic segment keys
+  queryKeys?: readonly string[];  // Expected query parameter keys
+  queryType?: TQuery;             // Type carrier for compile-time query params
 }
 ```
 

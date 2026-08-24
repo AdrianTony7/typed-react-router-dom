@@ -6,10 +6,21 @@ import { defineRoutes } from '../src/types';
 // Fixture
 // ---------------------------------------------------------------------------
 
+interface UserQuery {
+    tab?: 'profile' | 'settings' | 'activity';
+    page?: number;
+    active?: boolean;
+}
+
 const routes = defineRoutes({
     HOME: { path: '/', name: 'Home' },
     ABOUT: { path: '/about', name: 'About' },
-    USER_DETAIL: { path: '/users/:id', name: 'User Detail', paramKeys: ['id'] as const },
+    USER_DETAIL: {
+        path: '/users/:id',
+        name: 'User Detail',
+        paramKeys: ['id'] as const,
+        queryType: {} as UserQuery,
+    },
     USER_POST: {
         path: '/users/:userId/posts/:postId',
         name: 'User Post',
@@ -38,6 +49,26 @@ describe('RouteHelper.constructHref', () => {
         ).toBe('/users/1/posts/99');
     });
 
+    it('appends query parameters correctly with string, number, and boolean values', () => {
+        expect(
+            RouteHelper.constructHref(
+                routes.USER_DETAIL,
+                { id: '42' },
+                { tab: 'settings', page: 2, active: true }
+            )
+        ).toBe('/users/42?tab=settings&page=2&active=true');
+    });
+
+    it('omits undefined query parameters', () => {
+        expect(
+            RouteHelper.constructHref(
+                routes.USER_DETAIL,
+                { id: '42' },
+                { tab: 'profile', page: undefined }
+            )
+        ).toBe('/users/42?tab=profile');
+    });
+
     it('logs an error and returns the template path when required params are missing', () => {
         const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
         // params is typed as optional at runtime to allow RouteHelper to guard gracefully
@@ -45,6 +76,31 @@ describe('RouteHelper.constructHref', () => {
         expect(result).toBe('/users/:id');
         expect(consoleSpy).toHaveBeenCalled();
         consoleSpy.mockRestore();
+    });
+});
+
+// ---------------------------------------------------------------------------
+// extractQueryParams
+// ---------------------------------------------------------------------------
+
+describe('RouteHelper.extractQueryParams', () => {
+    it('extracts query params from a search string', () => {
+        expect(RouteHelper.extractQueryParams('?tab=settings&page=3')).toEqual({
+            tab: 'settings',
+            page: '3',
+        });
+    });
+
+    it('extracts query params from a full URL', () => {
+        expect(RouteHelper.extractQueryParams('/users/42?tab=activity&active=true')).toEqual({
+            tab: 'activity',
+            active: 'true',
+        });
+    });
+
+    it('returns empty object when no query string is present', () => {
+        expect(RouteHelper.extractQueryParams('/users/42')).toEqual({});
+        expect(RouteHelper.extractQueryParams('')).toEqual({});
     });
 });
 
@@ -93,12 +149,16 @@ describe('RouteHelper.isRouteMatchByUrl', () => {
         expect(RouteHelper.isRouteMatchByUrl(routes.ABOUT, '/about')).toBe(true);
     });
 
+    it('matches a static route with query string ignored', () => {
+        expect(RouteHelper.isRouteMatchByUrl(routes.ABOUT, '/about?tab=info')).toBe(true);
+    });
+
     it('does not match a static route with wrong path', () => {
         expect(RouteHelper.isRouteMatchByUrl(routes.ABOUT, '/home')).toBe(false);
     });
 
-    it('matches a dynamic route with correct params', () => {
-        expect(RouteHelper.isRouteMatchByUrl(routes.USER_DETAIL, '/users/42')).toBe(true);
+    it('matches a dynamic route with correct params and query string', () => {
+        expect(RouteHelper.isRouteMatchByUrl(routes.USER_DETAIL, '/users/42?tab=profile')).toBe(true);
     });
 
     it('does not match a dynamic route with wrong structure', () => {

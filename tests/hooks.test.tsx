@@ -4,51 +4,72 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { defineRoutes } from '../src/types';
 import { createTypedRouter } from '../src/createTypedRouter';
-import { useTypedNavigate, useTypedParams, useTypedMatch } from '../src/hooks';
+import {
+    useTypedNavigate,
+    useTypedParams,
+    useTypedSearchParams,
+    useTypedMatch,
+} from '../src/hooks';
 
 // ---------------------------------------------------------------------------
 // Test fixture routes
 // ---------------------------------------------------------------------------
 
+interface UserQuery {
+    tab?: 'profile' | 'settings';
+    page?: number;
+    active?: boolean;
+}
+
 const routes = defineRoutes({
     HOME: { path: '/', name: 'Home' },
-    USER_DETAIL: { path: '/users/:id', name: 'User Detail', paramKeys: ['id'] as const },
+    USER_DETAIL: {
+        path: '/users/:id',
+        name: 'User Detail',
+        paramKeys: ['id'] as const,
+        queryType: {} as UserQuery,
+    },
     SETTINGS: { path: '/settings', name: 'Settings' },
 } as const);
 
 const router = createTypedRouter(routes);
 
 // ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function renderAt(ui: React.ReactElement, initialEntry = '/') {
-    return render(
-        <MemoryRouter initialEntries={[initialEntry]}>
-            <Routes>
-                <Route path="*" element={ui} />
-            </Routes>
-        </MemoryRouter>
-    );
-}
-
-// ---------------------------------------------------------------------------
 // useTypedNavigate (standalone)
 // ---------------------------------------------------------------------------
 
 describe('useTypedNavigate', () => {
-    it('renders a button that navigates on click', () => {
-        const navigateMock = vi.fn();
-
+    it('renders a button that navigates with params on click', () => {
         function TestComponent() {
-            // Override useNavigate from react-router-dom to capture the call
             const navigate = useTypedNavigate(routes.USER_DETAIL);
             return (
                 <button onClick={() => navigate({ id: '42' })}>Go to User</button>
             );
         }
 
-        // We just test it doesn't throw at render time
+        expect(() =>
+            render(
+                <MemoryRouter>
+                    <TestComponent />
+                </MemoryRouter>
+            )
+        ).not.toThrow();
+    });
+
+    it('navigates with query params and newTab support', () => {
+        function TestComponent() {
+            const navigate = useTypedNavigate(routes.USER_DETAIL);
+            return (
+                <button
+                    onClick={() =>
+                        navigate({ id: '42' }, { tab: 'settings', active: true })
+                    }
+                >
+                    Go to User Settings
+                </button>
+            );
+        }
+
         expect(() =>
             render(
                 <MemoryRouter>
@@ -71,8 +92,7 @@ describe('useTypedParams', () => {
         }
 
         render(
-            <MemoryRouter initialEntries={['/users/123']}>
-                <Routes>
+            <MemoryRouter initialEntries={['/users/123']}>\n                <Routes>
                     <Route path="/users/:id" element={<TestComponent />} />
                 </Routes>
             </MemoryRouter>
@@ -83,23 +103,110 @@ describe('useTypedParams', () => {
 });
 
 // ---------------------------------------------------------------------------
-// useTypedMatch (standalone)
+// useTypedSearchParams (standalone & scoped)
 // ---------------------------------------------------------------------------
 
-describe('useTypedMatch', () => {
-    it('matches the current URL to the correct route', () => {
+describe('useTypedSearchParams', () => {
+    it('extracts query params from the search string', () => {
         function TestComponent() {
-            const { route, params } = useTypedMatch(routes);
+            const [query] = useTypedSearchParams(routes.USER_DETAIL);
             return (
                 <div>
-                    <span data-testid="name">{route?.name ?? 'none'}</span>
-                    <span data-testid="params">{JSON.stringify(params)}</span>
+                    <span data-testid="tab">{query.tab}</span>
+                    <span data-testid="page">{query.page}</span>
                 </div>
             );
         }
 
         render(
-            <MemoryRouter initialEntries={['/users/99']}>
+            <MemoryRouter initialEntries={['/users/42?tab=settings&page=3']}>
+                <Routes>
+                    <Route path="/users/:id" element={<TestComponent />} />
+                </Routes>
+            </MemoryRouter>
+        );
+
+        expect(screen.getByTestId('tab').textContent).toBe('settings');
+        expect(screen.getByTestId('page').textContent).toBe('3');
+    });
+
+    it('updates query params using setQuery with object', () => {
+        function TestComponent() {
+            const [query, setQuery] = useTypedSearchParams(routes.USER_DETAIL);
+            return (
+                <div>
+                    <span data-testid="tab">{query.tab ?? 'none'}</span>
+                    <button onClick={() => setQuery({ tab: 'settings' })}>Set Settings</button>
+                </div>
+            );
+        }
+
+        render(
+            <MemoryRouter initialEntries={['/users/42?tab=profile']}>
+                <Routes>
+                    <Route path="/users/:id" element={<TestComponent />} />
+                </Routes>
+            </MemoryRouter>
+        );
+
+        expect(screen.getByTestId('tab').textContent).toBe('profile');
+        fireEvent.click(screen.getByRole('button', { name: 'Set Settings' }));
+        expect(screen.getByTestId('tab').textContent).toBe('settings');
+    });
+
+    it('updates query params using functional updater', () => {
+        function TestComponent() {
+            const [query, setQuery] = useTypedSearchParams(routes.USER_DETAIL);
+            return (
+                <div>
+                    <span data-testid="tab">{query.tab ?? 'none'}</span>
+                    <button
+                        onClick={() =>
+                            setQuery((prev) => ({
+                                ...prev,
+                                tab: prev.tab === 'profile' ? 'settings' : 'profile',
+                            }))
+                        }
+                    >
+                        Toggle Tab
+                    </button>
+                </div>
+            );
+        }
+
+        render(
+            <MemoryRouter initialEntries={['/users/42?tab=profile']}>
+                <Routes>
+                    <Route path="/users/:id" element={<TestComponent />} />
+                </Routes>
+            </MemoryRouter>
+        );
+
+        expect(screen.getByTestId('tab').textContent).toBe('profile');
+        fireEvent.click(screen.getByRole('button', { name: 'Toggle Tab' }));
+        expect(screen.getByTestId('tab').textContent).toBe('settings');
+    });
+});
+
+// ---------------------------------------------------------------------------
+// useTypedMatch (standalone)
+// ---------------------------------------------------------------------------
+
+describe('useTypedMatch', () => {
+    it('matches the current URL to the correct route and extracts path & query params', () => {
+        function TestComponent() {
+            const { route, params, query } = useTypedMatch(routes);
+            return (
+                <div>
+                    <span data-testid="name">{route?.name ?? 'none'}</span>
+                    <span data-testid="params">{JSON.stringify(params)}</span>
+                    <span data-testid="query">{JSON.stringify(query)}</span>
+                </div>
+            );
+        }
+
+        render(
+            <MemoryRouter initialEntries={['/users/99?tab=profile&active=true']}>
                 <Routes>
                     <Route path="*" element={<TestComponent />} />
                 </Routes>
@@ -108,6 +215,9 @@ describe('useTypedMatch', () => {
 
         expect(screen.getByTestId('name').textContent).toBe('User Detail');
         expect(screen.getByTestId('params').textContent).toBe(JSON.stringify({ id: '99' }));
+        expect(screen.getByTestId('query').textContent).toBe(
+            JSON.stringify({ tab: 'profile', active: 'true' })
+        );
     });
 
     it('returns undefined when no route matches', () => {
@@ -142,15 +252,21 @@ describe('createTypedRouter — TypedLink', () => {
         expect(screen.getByRole('link', { name: 'Home' }).getAttribute('href')).toBe('/');
     });
 
-    it('renders a link to a dynamic route with params', () => {
+    it('renders a link to a dynamic route with params and query', () => {
         render(
             <MemoryRouter>
-                <router.TypedLink route={routes.USER_DETAIL} params={{ id: '7' }}>
+                <router.TypedLink
+                    route={routes.USER_DETAIL}
+                    params={{ id: '7' }}
+                    query={{ tab: 'settings', page: 2 }}
+                >
                     User
                 </router.TypedLink>
             </MemoryRouter>
         );
-        expect(screen.getByRole('link', { name: 'User' }).getAttribute('href')).toBe('/users/7');
+        expect(screen.getByRole('link', { name: 'User' }).getAttribute('href')).toBe(
+            '/users/7?tab=settings&page=2'
+        );
     });
 });
 
@@ -163,8 +279,10 @@ describe('createTypedRouter — getHref', () => {
         expect(router.getHref(routes.HOME)).toBe('/');
     });
 
-    it('returns a resolved dynamic path', () => {
-        expect(router.getHref(routes.USER_DETAIL, { id: '55' })).toBe('/users/55');
+    it('returns a resolved dynamic path with query', () => {
+        expect(
+            router.getHref(routes.USER_DETAIL, { id: '55' }, { tab: 'profile', active: true })
+        ).toBe('/users/55?tab=profile&active=true');
     });
 });
 
@@ -173,14 +291,19 @@ describe('createTypedRouter — getHref', () => {
 // ---------------------------------------------------------------------------
 
 describe('createTypedRouter — useTypedMatch (scoped)', () => {
-    it('uses the bound routesMap from the factory', () => {
+    it('uses the bound routesMap from the factory and returns query', () => {
         function TestComponent() {
-            const { route } = router.useTypedMatch();
-            return <span data-testid="name">{route?.name ?? 'none'}</span>;
+            const { route, query } = router.useTypedMatch();
+            return (
+                <div>
+                    <span data-testid="name">{route?.name ?? 'none'}</span>
+                    <span data-testid="query">{JSON.stringify(query)}</span>
+                </div>
+            );
         }
 
         render(
-            <MemoryRouter initialEntries={['/settings']}>
+            <MemoryRouter initialEntries={['/settings?theme=dark']}>
                 <Routes>
                     <Route path="*" element={<TestComponent />} />
                 </Routes>
@@ -188,5 +311,6 @@ describe('createTypedRouter — useTypedMatch (scoped)', () => {
         );
 
         expect(screen.getByTestId('name').textContent).toBe('Settings');
+        expect(screen.getByTestId('query').textContent).toBe(JSON.stringify({ theme: 'dark' }));
     });
 });

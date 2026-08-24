@@ -1,6 +1,6 @@
 import type { NavigateFunction } from 'react-router-dom';
 import { RouteHelper } from './RoutingHelper';
-import type { Route, RouteParams, TypedNavigationPropsWithNewTab } from './types';
+import type { Route, RouteParams, RouteQueryParams, TypedNavigationPropsWithNewTab } from './types';
 
 /**
  * A generic, decoupled service for programmatic navigation in React Router applications.
@@ -16,14 +16,14 @@ import type { Route, RouteParams, TypedNavigationPropsWithNewTab } from './types
  * }
  *
  * // Anywhere in the app (outside React tree too):
- * appRouter.navigateToRoute(routes.USER_DETAIL, { id: '42' });
+ * appRouter.navigateToRoute(routes.USER_DETAIL, { id: '42' }, { tab: 'profile' });
  * ```
  */
 export class AppRouterService {
     private _navigateFn: NavigateFunction | null = null;
 
     /**
-     * Registers the navigate function from `useNavigate()`.
+     * Registers the navigate function from `useNavigate()`.\
      * Call this early in your component tree, e.g. inside a layout or root component.
      */
     setNavigator(navigator: NavigateFunction): void {
@@ -31,20 +31,21 @@ export class AppRouterService {
     }
 
     /**
-     * Navigates to a route using a typed object with `route` and `params`.
+     * Navigates to a route using a typed object with `route`, `params`, and optional `query`.
      */
     navigateTo<R extends Route>(props: TypedNavigationPropsWithNewTab<R>): void {
-        const { route, params, newTab } = props;
-        this.navigateToStrict(route, params as RouteParams<R>, newTab);
+        const { route, params, query, newTab } = props;
+        this.navigateToStrict(route, params as RouteParams<R>, query, newTab);
     }
 
     /**
-     * Navigates to a route object directly with optional typed params.
+     * Navigates to a route object directly with optional typed params and query params.
      * Throws if required params are missing.
      */
     navigateToRoute<R extends Route>(
         route: R,
         params?: RouteParams<R>,
+        queryOrNewTab?: Partial<RouteQueryParams<R>> | boolean,
         newTab: boolean = false
     ): void {
         if (!params && route.paramKeys && route.paramKeys.length > 0) {
@@ -52,19 +53,29 @@ export class AppRouterService {
                 `[typed-react-router-dom] Route '${route.name ?? route.path}' requires params: ${route.paramKeys.join(', ')}`
             );
         }
-        const href = RouteHelper.constructHref(route, params);
-        this.navigateToURL(href, newTab);
+        let query: Partial<RouteQueryParams<R>> | undefined;
+        let openNewTab = newTab;
+
+        if (typeof queryOrNewTab === 'boolean') {
+            openNewTab = queryOrNewTab;
+        } else if (queryOrNewTab && typeof queryOrNewTab === 'object') {
+            query = queryOrNewTab;
+        }
+
+        const href = RouteHelper.constructHref(route, params, query);
+        this.navigateToURL(href, openNewTab);
     }
 
     /**
-     * Navigates to a route with strictly typed params (assumes params are always required).
+     * Navigates to a route with strictly typed params and optional query params.
      */
     navigateToStrict<R extends Route>(
         route: R,
         params: RouteParams<R>,
+        query?: Partial<RouteQueryParams<R>>,
         newTab: boolean = false
     ): void {
-        const href = RouteHelper.constructHref(route, params);
+        const href = RouteHelper.constructHref(route, params, query);
         this.navigateToURL(href, newTab);
     }
 
