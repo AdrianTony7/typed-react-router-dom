@@ -2,16 +2,17 @@
 
 A generic, type-safe routing library for **React** + **react-router-dom**.
 
-Define your application routes once and get fully typed navigation, link components, hooks, typed query parameters, and a programmatic router service — all with compile-time type safety and zero runtime dependencies.
+Define your application routes once and get fully typed navigation, link and route components, hooks, typed query parameters, and a programmatic router service — all with compile-time type safety and zero runtime dependencies.
 
 ---
 
 ## Features
 
-- 🔒 **Type-safe routes** — `defineRoutes` preserves literal path types, param keys, and query param types
-- 🔗 **`<AppLink />`** — a typed `<Link />` wrapper that enforces required params and typed query params
+- 🔒 **Type-safe routes** — `defineRoutes` automatically infers dynamic `:param` segments directly from `path` (no manual key arrays required!)
+- 🧭 **`<TypedRoute />` / `<RouteComponent />`** — type-safe route components for React Router's `<Routes>` that guarantee valid paths
+- 🔗 **`<TypedLink />` / `<Link />`** — type-safe `<Link />` wrappers that enforce required params and typed query params
 - 🪝 **React hooks** — `useTypedNavigate`, `useTypedParams`, `useTypedSearchParams`, `useTypedMatch`
-- 🔍 **Typed Query Parameters** — declare query params with types or keys and get full autocompletion & query setters
+- 🔍 **Typed Query Parameters** — declare `queryType` and get full autocompletion & query setters
 - 🏭 **`createTypedRouter(routes)`** — a factory for zero-boilerplate per-app routers
 - 🚀 **Programmatic navigation** — `AppRouterService` for navigating outside the React tree
 - 📦 **Dual ESM/CJS** build with bundled TypeScript declarations
@@ -34,6 +35,8 @@ npm install typed-react-router-dom react-router-dom
 
 ### 1. Define your routes
 
+Dynamic parameters like `:id` are **automatically inferred** from the path string. You can optionally attach a `queryType` for type-safe query parameters.
+
 ```ts
 // src/routes.ts
 import { defineRoutes, createTypedRouter } from 'typed-react-router-dom';
@@ -47,10 +50,10 @@ interface UserDetailQuery {
 export const routes = defineRoutes({
   HOME:        { path: '/',          name: 'Home' },
   ABOUT:       { path: '/about',     name: 'About' },
+  // ':id' is automatically inferred as { id: string }
   USER_DETAIL: {
     path: '/users/:id',
     name: 'User Detail',
-    paramKeys: ['id'] as const,
     queryType: {} as UserDetailQuery,
   },
 } as const);
@@ -58,7 +61,26 @@ export const routes = defineRoutes({
 export const router = createTypedRouter(routes);
 ```
 
-### 2. Wire up programmatic navigation (optional)
+### 2. Render routes with `<TypedRoute />` or `<RouteComponent />`
+
+```tsx
+// src/App.tsx
+import { Routes } from 'react-router-dom';
+import { router, routes } from './routes';
+import { HomePage } from './pages/HomePage';
+import { UserDetailPage } from './pages/UserDetailPage';
+
+export function App() {
+  return (
+    <Routes>
+      <router.TypedRoute path={routes.HOME.path} element={<HomePage />} />
+      <router.RouteComponent path={routes.USER_DETAIL.path} element={<UserDetailPage />} />
+    </Routes>
+  );
+}
+```
+
+### 3. Wire up programmatic navigation (optional)
 
 ```tsx
 // src/NavigationSetter.tsx
@@ -81,7 +103,7 @@ export function NavigationSetter() {
 
 ### `defineRoutes(map)`
 
-Preserves literal string types, `paramKeys` tuples, and `queryType` definitions on your route map.
+Preserves literal string types and infers path parameters automatically:
 
 ```ts
 const routes = defineRoutes({
@@ -89,11 +111,12 @@ const routes = defineRoutes({
   USER_DETAIL: {
     path: '/users/:id',
     name: 'User Detail',
-    paramKeys: ['id'] as const,
     queryType: {} as { tab?: 'profile' | 'settings'; page?: number },
   },
 } as const);
 ```
+
+> **Note:** `paramKeys` and `queryKeys` are deprecated and will be removed in version 1.0.0. Path parameters are inferred automatically from `path`, and query parameters should use `queryType`.
 
 ### `createTypedRouter(routes)`
 
@@ -105,7 +128,8 @@ const router = createTypedRouter(routes);
 
 | Member | Description |
 |---|---|
-| `router.TypedLink` | Type-safe `<Link />` component supporting `params` & `query` |
+| `router.TypedRoute` / `router.RouteComponent` | Type-safe `<Route />` component strictly typed to your route map's paths |
+| `router.TypedLink` / `router.Link` | Type-safe `<Link />` component supporting `params` & `query` |
 | `router.getHref(route, params?, query?)` | Constructs a URL string using `generatePath` + query string serialization |
 | `router.useTypedNavigate(route)` | Returns a typed navigation callback accepting `(params, query?, newTab?)` |
 | `router.useTypedParams(route)` | Returns typed path params from the current URL |
@@ -116,23 +140,42 @@ const router = createTypedRouter(routes);
 
 ---
 
-### `<AppLink route params? query? ...LinkProps>`
+### `<TypedLink />` / `<Link />` (formerly `<AppLink />`)
 
 ```tsx
-import { AppLink } from 'typed-react-router-dom';
+import { TypedLink, Link } from 'typed-react-router-dom';
 import { routes } from './routes';
 
 // Static route — no params needed
-<AppLink route={routes.HOME}>Home</AppLink>
+<TypedLink route={routes.HOME}>Home</TypedLink>
 
 // Dynamic route with typed path & query parameters
-<AppLink
+<TypedLink
   route={routes.USER_DETAIL}
   params={{ id: '42' }}
   query={{ tab: 'settings', active: true }}
 >
   View User Settings
-</AppLink>
+</TypedLink>
+```
+
+> **Note:** `<AppLink />` is kept as a deprecated alias for backwards compatibility and will be removed in version 1.0.0.
+
+---
+
+### `<TypedRoute />` / `<RouteComponent />`
+
+Type-safe replacement for `react-router-dom`'s `<Route />`. Guarantees that the route path matches defined routes.
+
+```tsx
+import { Routes } from 'react-router-dom';
+import { TypedRoute, RouteComponent } from 'typed-react-router-dom';
+import { routes } from './routes';
+
+<Routes>
+  <TypedRoute path={routes.HOME.path} element={<Home />} />
+  <RouteComponent path={routes.USER_DETAIL.path} element={<UserDetail />} />
+</Routes>
 ```
 
 ---
@@ -231,6 +274,7 @@ import { RouteHelper } from 'typed-react-router-dom';
 
 RouteHelper.constructHref(routes.USER_DETAIL, { id: '42' }, { tab: 'settings' });  // '/users/42?tab=settings'
 RouteHelper.extractParamsFromPath(routes.USER_DETAIL, '/users/99');                 // { id: '99' }
+RouteHelper.extractParamKeysFromPath('/users/:id/posts/:postId');                   // ['id', 'postId']
 RouteHelper.extractQueryParams('?tab=settings&page=2');                             // { tab: 'settings', page: '2' }
 RouteHelper.getRouteMatchByUrl(routes, '/users/5');                                 // routes.USER_DETAIL
 RouteHelper.getAllRoutesAsArray(routes);                                            // Route[]
@@ -247,9 +291,12 @@ interface Route<TPath extends string = string, TQuery extends Record<string, any
   name?: string;                  // Human-readable display name
   parent?: string;                // Parent route path for breadcrumbs / nesting
   icon?: ComponentType<any>;      // Optional icon component
-  paramKeys?: readonly string[];  // Required dynamic segment keys
-  queryKeys?: readonly string[];  // Expected query parameter keys
   queryType?: TQuery;             // Type carrier for compile-time query params
+
+  /** @deprecated Path params are now auto-inferred from path. Will be removed in v1.0.0 */
+  paramKeys?: readonly string[];
+  /** @deprecated Use queryType instead. Will be removed in v1.0.0 */
+  queryKeys?: readonly string[];
 }
 ```
 

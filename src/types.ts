@@ -1,6 +1,17 @@
 import type { ComponentType } from "react";
 
 /**
+ * Utility type to extract dynamic `:param` segments from a path string literal.
+ * E.g., `'/users/:id/posts/:postId'` -> `'id' | 'postId'`
+ */
+export type ExtractParamKeys<Path extends string> =
+    Path extends `${string}:${infer Param}/${infer Rest}`
+        ? Param | ExtractParamKeys<`/${Rest}`>
+        : Path extends `${string}:${infer Param}`
+            ? Param
+            : never;
+
+/**
  * Interface representing a single, type-safe route.
  * Each route has a unique path, optional parent route, display title, icon, dynamic parameter keys, and query parameters.
  */
@@ -16,9 +27,17 @@ export interface Route<
     parent?: string;
     /** Optional icon component (e.g., from Lucide or any React icon library). */
     icon?: ComponentType<any>;
-    /** An array of expected path parameter keys (e.g., ['id']). */
+    /**
+     * An array of expected path parameter keys (e.g., ['id']).
+     * @deprecated Path parameters are now automatically inferred directly from the `path` string (e.g. `':id'`).
+     * `paramKeys` will be removed in the next major version.
+     */
     paramKeys?: readonly string[];
-    /** An array of expected query parameter keys (e.g., ['tab', 'page']). */
+    /**
+     * An array of expected query parameter keys (e.g., ['tab', 'page']).
+     * @deprecated Use `queryType` instead for full compile-time type-safety across unions, booleans, and numbers.
+     * `queryKeys` will be removed in the next major version.
+     */
     queryKeys?: readonly string[];
     /** Optional compile-time type carrier for typed query parameters. */
     queryType?: TQuery;
@@ -34,12 +53,15 @@ export interface RoutingMap {
 
 /**
  * Utility type to extract required path parameters from a Route definition.
- * - If `paramKeys` is defined on the Route type, it produces an object requiring those keys as strings.
- * - Otherwise, it evaluates to `undefined`.
+ * - Automatically infers `:param` tokens from `route.path`.
+ * - Falls back to `paramKeys` if defined on the Route for backward compatibility.
+ * - Otherwise evaluates to `undefined`.
  */
-export type RouteParams<R extends Route> = R['paramKeys'] extends readonly string[]
-    ? { [K in R['paramKeys'][number]]: string }
-    : undefined;
+export type RouteParams<R extends Route> = [ExtractParamKeys<R['path']>] extends [never]
+    ? R['paramKeys'] extends readonly string[]
+        ? { [K in R['paramKeys'][number]]: string }
+        : undefined
+    : { [K in ExtractParamKeys<R['path']>]: string };
 
 /**
  * Utility type to extract query parameters from a Route definition.
@@ -87,7 +109,6 @@ export type TypedNavigationPropsWithNewTab<R extends Route> = TypedNavigationPro
  *   USER_DETAIL: {
  *     path: '/users/:id',
  *     name: 'User Detail',
- *     paramKeys: ['id'] as const,
  *     queryType: {} as { tab?: 'profile' | 'settings'; page?: number }
  *   }
  * } as const);

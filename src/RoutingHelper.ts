@@ -7,6 +7,28 @@ import type { Route, RoutingMap, RouteParams, RouteQueryParams } from './types';
  */
 export class RouteHelper {
     /**
+     * Extracts expected parameter key names from a route path string.
+     * E.g. `'/users/:id/posts/:postId'` -> `['id', 'postId']`.
+     *
+     * @param path - The route path template.
+     * @returns An array of parameter key strings.
+     */
+    public static extractParamKeysFromPath(path: string): string[] {
+        const segments = path.split('/').filter(Boolean);
+        const keys: string[] = [];
+        for (const seg of segments) {
+            if (seg.startsWith(':')) {
+                // Handle possible optional params like :id? or wildcards if any
+                const key = seg.slice(1).replace(/\?$/, '');
+                if (key) {
+                    keys.push(key);
+                }
+            }
+        }
+        return keys;
+    }
+
+    /**
      * Constructs a fully-resolved URL string for a given route, including path and query parameters.
      * Delegates to react-router-dom's `generatePath` for path interpolation and formats query parameters.
      *
@@ -20,9 +42,13 @@ export class RouteHelper {
         params?: RouteParams<R>,
         query?: Partial<RouteQueryParams<R>>
     ): string {
-        if (route.paramKeys && route.paramKeys.length > 0 && !params) {
+        const expectedKeys = route.paramKeys && route.paramKeys.length > 0
+            ? (route.paramKeys as readonly string[])
+            : this.extractParamKeysFromPath(route.path);
+
+        if (expectedKeys.length > 0 && !params) {
             console.error(
-                `[typed-react-router-dom] Route '${route.name ?? route.path}' requires parameters: ${route.paramKeys.join(', ')}, but none were provided.`
+                `[typed-react-router-dom] Route '${route.name ?? route.path}' requires parameters: ${expectedKeys.join(', ')}, but none were provided.`
             );
             return route.path;
         }
@@ -82,7 +108,8 @@ export class RouteHelper {
             if (!pathSeg) return undefined;
 
             if (routeSeg.startsWith(':')) {
-                params[routeSeg.slice(1)] = pathSeg;
+                const key = routeSeg.slice(1).replace(/\?$/, '');
+                params[key] = pathSeg;
             } else if (routeSeg !== pathSeg) {
                 return undefined; // static segment mismatch
             }
@@ -157,8 +184,12 @@ export class RouteHelper {
         const extracted = this.extractParamsFromPath(route, cleanPathname);
         if (!extracted) return false;
 
-        if (route.paramKeys && route.paramKeys.length > 0) {
-            const hasAll = route.paramKeys.every((k) => k in extracted);
+        const expectedKeys = route.paramKeys && route.paramKeys.length > 0
+            ? (route.paramKeys as readonly string[])
+            : this.extractParamKeysFromPath(route.path);
+
+        if (expectedKeys.length > 0) {
+            const hasAll = expectedKeys.every((k) => k in extracted);
             if (!hasAll) return false;
             // Verify round-trip: reconstructing the path from extracted params should match
             try {

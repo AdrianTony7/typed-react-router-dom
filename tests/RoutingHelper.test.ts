@@ -18,16 +18,35 @@ const routes = defineRoutes({
     USER_DETAIL: {
         path: '/users/:id',
         name: 'User Detail',
-        paramKeys: ['id'] as const,
         queryType: {} as UserQuery,
     },
     USER_POST: {
         path: '/users/:userId/posts/:postId',
         name: 'User Post',
-        paramKeys: ['userId', 'postId'] as const,
     },
     PROFILE: { path: '/profile', name: 'Profile', parent: '/' },
 } as const);
+
+// ---------------------------------------------------------------------------
+// extractParamKeysFromPath
+// ---------------------------------------------------------------------------
+
+describe('RouteHelper.extractParamKeysFromPath', () => {
+    it('returns empty array for static paths', () => {
+        expect(RouteHelper.extractParamKeysFromPath('/')).toEqual([]);
+        expect(RouteHelper.extractParamKeysFromPath('/about/us')).toEqual([]);
+    });
+
+    it('extracts single dynamic param key', () => {
+        expect(RouteHelper.extractParamKeysFromPath('/users/:id')).toEqual(['id']);
+    });
+
+    it('extracts multiple dynamic param keys', () => {
+        expect(
+            RouteHelper.extractParamKeysFromPath('/users/:userId/posts/:postId')
+        ).toEqual(['userId', 'postId']);
+    });
+});
 
 // ---------------------------------------------------------------------------
 // constructHref
@@ -39,11 +58,11 @@ describe('RouteHelper.constructHref', () => {
         expect(RouteHelper.constructHref(routes.ABOUT)).toBe('/about');
     });
 
-    it('resolves a single dynamic param', () => {
+    it('resolves a single dynamic param (auto-inferred without paramKeys)', () => {
         expect(RouteHelper.constructHref(routes.USER_DETAIL, { id: '42' })).toBe('/users/42');
     });
 
-    it('resolves multiple dynamic params', () => {
+    it('resolves multiple dynamic params (auto-inferred)', () => {
         expect(
             RouteHelper.constructHref(routes.USER_POST, { userId: '1', postId: '99' })
         ).toBe('/users/1/posts/99');
@@ -69,9 +88,8 @@ describe('RouteHelper.constructHref', () => {
         ).toBe('/users/42?tab=profile');
     });
 
-    it('logs an error and returns the template path when required params are missing', () => {
+    it('logs an error and returns the template path when required params are missing (auto-inferred)', () => {
         const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-        // params is typed as optional at runtime to allow RouteHelper to guard gracefully
         const result = RouteHelper.constructHref(routes.USER_DETAIL, undefined as never);
         expect(result).toBe('/users/:id');
         expect(consoleSpy).toHaveBeenCalled();

@@ -12,7 +12,6 @@
  *   USER_DETAIL: {
  *     path: '/users/:id',
  *     name: 'User Detail',
- *     paramKeys: ['id'] as const,
  *     queryType: {} as { tab?: 'profile' | 'settings'; page?: number }
  *   },
  * } as const);
@@ -30,6 +29,7 @@ export type {
     DynamicRouteParam,
     TypedNavigationProps,
     TypedNavigationPropsWithNewTab,
+    ExtractParamKeys,
 } from './types';
 
 // defineRoutes helper
@@ -38,9 +38,13 @@ export { defineRoutes } from './types';
 // Route helper utilities
 export { RouteHelper } from './RoutingHelper';
 
-// AppLink component
-export { AppLink } from './AppLink';
-export type { AppLinkProps } from './AppLink';
+// TypedLink / Link / AppLink component
+export { TypedLink, Link, AppLink } from './TypedLink';
+export type { TypedLinkProps, AppLinkProps } from './TypedLink';
+
+// TypedRoute / RouteComponent component
+export { TypedRoute, RouteComponent } from './TypedRoute';
+export type { TypedRouteProps, RouteComponentProps } from './TypedRoute';
 
 // AppRouterService (singleton + class)
 export { AppRouterService, appRouter } from './AppRouterService';

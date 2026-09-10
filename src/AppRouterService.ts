@@ -48,9 +48,13 @@ export class AppRouterService {
         queryOrNewTab?: Partial<RouteQueryParams<R>> | boolean,
         newTab: boolean = false
     ): void {
-        if (!params && route.paramKeys && route.paramKeys.length > 0) {
+        const expectedKeys = route.paramKeys && route.paramKeys.length > 0
+            ? (route.paramKeys as readonly string[])
+            : RouteHelper.extractParamKeysFromPath(route.path);
+
+        if (!params && expectedKeys.length > 0) {
             throw new Error(
-                `[typed-react-router-dom] Route '${route.name ?? route.path}' requires params: ${route.paramKeys.join(', ')}`
+                `[typed-react-router-dom] Route '${route.name ?? route.path}' requires params: ${expectedKeys.join(', ')}`
             );
         }
         let query: Partial<RouteQueryParams<R>> | undefined;

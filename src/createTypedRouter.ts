@@ -1,6 +1,13 @@
 import React from 'react';
-import type { LinkProps } from 'react-router-dom';
-import { Link, useNavigate, useParams, useLocation, useSearchParams } from 'react-router-dom';
+import type { LinkProps, PathRouteProps } from 'react-router-dom';
+import {
+    Link as ReactRouterLink,
+    Route as ReactRouterRoute,
+    useNavigate,
+    useParams,
+    useLocation,
+    useSearchParams,
+} from 'react-router-dom';
 import { RouteHelper } from './RoutingHelper';
 import { AppRouterService } from './AppRouterService';
 import type {
@@ -20,6 +27,10 @@ type ScopedAppLinkProps<R extends Route> = Omit<LinkProps, 'to'> & {
     query?: Partial<RouteQueryParams<R>>;
 } & DynamicRouteParam<R>;
 
+type ScopedTypedRouteProps<M extends RoutingMap> = Omit<PathRouteProps, 'path'> & {
+    path: M[keyof M]['path'];
+};
+
 /**
  * The object returned by `createTypedRouter(routes)`.\
  * Contains all components, hooks, and service scoped to your route map.
@@ -38,6 +49,37 @@ export interface TypedRouter<M extends RoutingMap> {
     TypedLink: <R extends M[keyof M]>(
         props: React.PropsWithChildren<ScopedAppLinkProps<R>>
     ) => React.ReactElement;
+
+    /**
+     * Alias for `TypedLink`.
+     */
+    Link: <R extends M[keyof M]>(
+        props: React.PropsWithChildren<ScopedAppLinkProps<R>>
+    ) => React.ReactElement;
+
+    /**
+     * @deprecated Renamed to `TypedLink`. `AppLink` is retained for backward compatibility.
+     */
+    AppLink: <R extends M[keyof M]>(
+        props: React.PropsWithChildren<ScopedAppLinkProps<R>>
+    ) => React.ReactElement;
+
+    /**
+     * Typed `<Route />` component strictly typed to your route map's paths.
+     *
+     * @example
+     * ```tsx
+     * <Routes>
+     *   <router.TypedRoute path={router.routes.USER_DETAIL.path} element={<UserDetailPage />} />
+     * </Routes>
+     * ```
+     */
+    TypedRoute: (props: ScopedTypedRouteProps<M>) => React.ReactElement;
+
+    /**
+     * Alias for `TypedRoute`.
+     */
+    RouteComponent: (props: ScopedTypedRouteProps<M>) => React.ReactElement;
 
     /**
      * Constructs a fully-resolved href string for a given route + params + query.
@@ -125,7 +167,6 @@ export interface TypedRouter<M extends RoutingMap> {
  *   USER_DETAIL: {
  *     path: '/users/:id',
  *     name: 'User Detail',
- *     paramKeys: ['id'] as const,
  *     queryType: {} as { tab?: 'profile' | 'settings' }
  *   },
  * } as const);
@@ -147,8 +188,13 @@ export function createTypedRouter<M extends RoutingMap>(routesMap: M): TypedRout
             params as RouteParams<R>,
             query as Partial<RouteQueryParams<R>>
         );
-        return React.createElement(Link, { to: href, ...linkProps }, children);
+        return React.createElement(ReactRouterLink, { to: href, ...linkProps }, children);
     }
+
+    // --- TypedRoute ---
+    const TypedRoute = ReactRouterRoute as unknown as (
+        props: ScopedTypedRouteProps<M>
+    ) => React.ReactElement;
 
     // --- getHref ---
     function getHref<R extends M[keyof M]>(
@@ -266,6 +312,10 @@ export function createTypedRouter<M extends RoutingMap>(routesMap: M): TypedRout
 
     return {
         TypedLink,
+        Link: TypedLink,
+        AppLink: TypedLink,
+        TypedRoute,
+        RouteComponent: TypedRoute,
         getHref,
         useTypedNavigate,
         useTypedParams,
