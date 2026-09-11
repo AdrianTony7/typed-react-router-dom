@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import type { PathRouteProps } from 'react-router-dom';
 import { Route as ReactRouterRoute } from 'react-router-dom';
 import type { Route } from './types';
@@ -14,11 +14,6 @@ export type TypedRouteProps<R extends Route> = Omit<PathRouteProps, 'path'> & {
      */
     path: R['path'];
 };
-
-/**
- * Props for `<RouteComponent />`.
- */
-export type RouteComponentProps<R extends Route> = TypedRouteProps<R>;
 
 /**
  * A type-safe `<Route />` component that delegates directly to react-router-dom's `<Route />`.

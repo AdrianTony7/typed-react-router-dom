@@ -44,7 +44,7 @@ export type { TypedLinkProps } from './TypedLink';
 
 // TypedRoute / RouteComponent component
 export { TypedRoute, RouteComponent } from './TypedRoute';
-export type { TypedRouteProps, RouteComponentProps } from './TypedRoute';
+export type { TypedRouteProps } from './TypedRoute';
 
 // AppRouterService (singleton + class)
 export { AppRouterService, appRouter } from './AppRouterService';
