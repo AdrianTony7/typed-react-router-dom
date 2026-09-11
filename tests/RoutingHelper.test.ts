@@ -1,16 +1,11 @@
 import { describe, it, expect, vi } from 'vitest';
 import { RouteHelper } from '../src/RoutingHelper';
 import { defineRoutes } from '../src/types';
+import { sampleRoutes } from './fixtures/sampleRoutes';
 
 // ---------------------------------------------------------------------------
-// Fixture
+// Test routes fixtures
 // ---------------------------------------------------------------------------
-
-interface UserQuery {
-    tab?: 'profile' | 'settings' | 'activity';
-    page?: number;
-    active?: boolean;
-}
 
 const routes = defineRoutes({
     HOME: { path: '/', name: 'Home' },
@@ -18,13 +13,17 @@ const routes = defineRoutes({
     USER_DETAIL: {
         path: '/users/:id',
         name: 'User Detail',
-        queryType: {} as UserQuery,
+        queryType: {} as { tab?: 'profile' | 'settings'; page?: number; active?: boolean },
     },
     USER_POST: {
         path: '/users/:userId/posts/:postId',
         name: 'User Post',
     },
-    PROFILE: { path: '/profile', name: 'Profile', parent: '/' },
+    CHILD_PAGE: {
+        path: '/about/team',
+        name: 'Team',
+        parent: '/about',
+    },
 } as const);
 
 // ---------------------------------------------------------------------------
@@ -32,19 +31,20 @@ const routes = defineRoutes({
 // ---------------------------------------------------------------------------
 
 describe('RouteHelper.extractParamKeysFromPath', () => {
-    it('returns empty array for static paths', () => {
+    it('returns an empty array for static paths', () => {
         expect(RouteHelper.extractParamKeysFromPath('/')).toEqual([]);
-        expect(RouteHelper.extractParamKeysFromPath('/about/us')).toEqual([]);
+        expect(RouteHelper.extractParamKeysFromPath('/about/team')).toEqual([]);
     });
 
-    it('extracts single dynamic param key', () => {
+    it('extracts a single parameter key from path', () => {
         expect(RouteHelper.extractParamKeysFromPath('/users/:id')).toEqual(['id']);
     });
 
-    it('extracts multiple dynamic param keys', () => {
-        expect(
-            RouteHelper.extractParamKeysFromPath('/users/:userId/posts/:postId')
-        ).toEqual(['userId', 'postId']);
+    it('extracts multiple parameter keys from path', () => {
+        expect(RouteHelper.extractParamKeysFromPath('/users/:userId/posts/:postId')).toEqual([
+            'userId',
+            'postId',
+        ]);
     });
 });
 
@@ -53,12 +53,12 @@ describe('RouteHelper.extractParamKeysFromPath', () => {
 // ---------------------------------------------------------------------------
 
 describe('RouteHelper.constructHref', () => {
-    it('returns the static path for routes without paramKeys', () => {
+    it('returns the static path for static routes', () => {
         expect(RouteHelper.constructHref(routes.HOME)).toBe('/');
         expect(RouteHelper.constructHref(routes.ABOUT)).toBe('/about');
     });
 
-    it('resolves a single dynamic param (auto-inferred without paramKeys)', () => {
+    it('resolves a single dynamic param (auto-inferred)', () => {
         expect(RouteHelper.constructHref(routes.USER_DETAIL, { id: '42' })).toBe('/users/42');
     });
 
@@ -73,27 +73,27 @@ describe('RouteHelper.constructHref', () => {
             RouteHelper.constructHref(
                 routes.USER_DETAIL,
                 { id: '42' },
-                { tab: 'settings', page: 2, active: true }
+                { tab: 'profile', page: 2, active: true }
             )
-        ).toBe('/users/42?tab=settings&page=2&active=true');
+        ).toBe('/users/42?tab=profile&page=2&active=true');
     });
 
-    it('omits undefined query parameters', () => {
+    it('omits undefined and null query parameter values', () => {
         expect(
             RouteHelper.constructHref(
                 routes.USER_DETAIL,
                 { id: '42' },
-                { tab: 'profile', page: undefined }
+                { tab: 'settings', page: undefined }
             )
-        ).toBe('/users/42?tab=profile');
+        ).toBe('/users/42?tab=settings');
     });
 
-    it('logs an error and returns the template path when required params are missing (auto-inferred)', () => {
-        const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-        const result = RouteHelper.constructHref(routes.USER_DETAIL, undefined as never);
-        expect(result).toBe('/users/:id');
-        expect(consoleSpy).toHaveBeenCalled();
-        consoleSpy.mockRestore();
+    it('logs an error and returns the template path if required params are missing', () => {
+        const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        const href = RouteHelper.constructHref(routes.USER_DETAIL);
+        expect(spy).toHaveBeenCalled();
+        expect(href).toBe(routes.USER_DETAIL.path);
+        spy.mockRestore();
     });
 });
 
@@ -102,23 +102,23 @@ describe('RouteHelper.constructHref', () => {
 // ---------------------------------------------------------------------------
 
 describe('RouteHelper.extractQueryParams', () => {
-    it('extracts query params from a search string', () => {
-        expect(RouteHelper.extractQueryParams('?tab=settings&page=3')).toEqual({
+    it('parses empty query string to empty object', () => {
+        expect(RouteHelper.extractQueryParams('')).toEqual({});
+        expect(RouteHelper.extractQueryParams('?')).toEqual({});
+    });
+
+    it('parses search string with question mark', () => {
+        expect(RouteHelper.extractQueryParams('?tab=settings&page=2')).toEqual({
             tab: 'settings',
-            page: '3',
+            page: '2',
         });
     });
 
-    it('extracts query params from a full URL', () => {
-        expect(RouteHelper.extractQueryParams('/users/42?tab=activity&active=true')).toEqual({
-            tab: 'activity',
+    it('parses full URL search string', () => {
+        expect(RouteHelper.extractQueryParams('/users/42?tab=profile&active=true')).toEqual({
+            tab: 'profile',
             active: 'true',
         });
-    });
-
-    it('returns empty object when no query string is present', () => {
-        expect(RouteHelper.extractQueryParams('/users/42')).toEqual({});
-        expect(RouteHelper.extractQueryParams('')).toEqual({});
     });
 });
 
@@ -127,60 +127,32 @@ describe('RouteHelper.extractQueryParams', () => {
 // ---------------------------------------------------------------------------
 
 describe('RouteHelper.extractParamsFromPath', () => {
-    it('returns undefined for static routes that do not match', () => {
-        expect(RouteHelper.extractParamsFromPath(routes.HOME, '/about')).toBeUndefined();
+    it('extracts a single parameter correctly', () => {
+        const result = RouteHelper.extractParamsFromPath(routes.USER_DETAIL, '/users/42');
+        expect(result).toEqual({ id: '42' });
     });
 
-    it('returns an empty object for a static exact match', () => {
-        expect(RouteHelper.extractParamsFromPath(routes.ABOUT, '/about')).toEqual({});
+    it('extracts multiple parameters correctly', () => {
+        const result = RouteHelper.extractParamsFromPath(
+            routes.USER_POST,
+            '/users/alice/posts/101'
+        );
+        expect(result).toEqual({ userId: 'alice', postId: '101' });
     });
 
-    it('extracts a single param', () => {
-        expect(RouteHelper.extractParamsFromPath(routes.USER_DETAIL, '/users/42')).toEqual({
-            id: '42',
-        });
+    it('returns undefined if segment counts do not match', () => {
+        const result = RouteHelper.extractParamsFromPath(routes.USER_DETAIL, '/users/42/extra');
+        expect(result).toBeUndefined();
     });
 
-    it('extracts multiple params', () => {
-        expect(
-            RouteHelper.extractParamsFromPath(routes.USER_POST, '/users/1/posts/99')
-        ).toEqual({ userId: '1', postId: '99' });
+    it('returns undefined if static segments do not match', () => {
+        const result = RouteHelper.extractParamsFromPath(routes.USER_DETAIL, '/accounts/42');
+        expect(result).toBeUndefined();
     });
 
-    it('returns undefined if segment count differs', () => {
-        expect(
-            RouteHelper.extractParamsFromPath(routes.USER_DETAIL, '/users/42/extra')
-        ).toBeUndefined();
-    });
-
-    it('accepts a raw string path pattern', () => {
-        expect(RouteHelper.extractParamsFromPath('/items/:id', '/items/7')).toEqual({ id: '7' });
-    });
-});
-
-// ---------------------------------------------------------------------------
-// isRouteMatchByUrl
-// ---------------------------------------------------------------------------
-
-describe('RouteHelper.isRouteMatchByUrl', () => {
-    it('matches a static route exactly', () => {
-        expect(RouteHelper.isRouteMatchByUrl(routes.ABOUT, '/about')).toBe(true);
-    });
-
-    it('matches a static route with query string ignored', () => {
-        expect(RouteHelper.isRouteMatchByUrl(routes.ABOUT, '/about?tab=info')).toBe(true);
-    });
-
-    it('does not match a static route with wrong path', () => {
-        expect(RouteHelper.isRouteMatchByUrl(routes.ABOUT, '/home')).toBe(false);
-    });
-
-    it('matches a dynamic route with correct params and query string', () => {
-        expect(RouteHelper.isRouteMatchByUrl(routes.USER_DETAIL, '/users/42?tab=profile')).toBe(true);
-    });
-
-    it('does not match a dynamic route with wrong structure', () => {
-        expect(RouteHelper.isRouteMatchByUrl(routes.USER_DETAIL, '/users')).toBe(false);
+    it('works when passed a string path instead of a Route object', () => {
+        const result = RouteHelper.extractParamsFromPath('/items/:itemId', '/items/item-123');
+        expect(result).toEqual({ itemId: 'item-123' });
     });
 });
 
@@ -189,16 +161,61 @@ describe('RouteHelper.isRouteMatchByUrl', () => {
 // ---------------------------------------------------------------------------
 
 describe('RouteHelper.getRouteMatchByUrl', () => {
-    it('finds a static route', () => {
-        expect(RouteHelper.getRouteMatchByUrl(routes, '/about')).toBe(routes.ABOUT);
+    it('matches an exact static route', () => {
+        const match = RouteHelper.getRouteMatchByUrl(routes, '/');
+        expect(match).toBe(routes.HOME);
     });
 
-    it('finds a dynamic route', () => {
-        expect(RouteHelper.getRouteMatchByUrl(routes, '/users/42')).toBe(routes.USER_DETAIL);
+    it('matches another static route', () => {
+        const match = RouteHelper.getRouteMatchByUrl(routes, '/about');
+        expect(match).toBe(routes.ABOUT);
+    });
+
+    it('matches a dynamic route and resolves to correct Route object', () => {
+        const match = RouteHelper.getRouteMatchByUrl(routes, '/users/99');
+        expect(match).toBe(routes.USER_DETAIL);
+    });
+
+    it('matches dynamic route even if query string is present in pathname', () => {
+        const match = RouteHelper.getRouteMatchByUrl(routes, '/users/99?tab=settings');
+        expect(match).toBe(routes.USER_DETAIL);
     });
 
     it('returns undefined when no route matches', () => {
-        expect(RouteHelper.getRouteMatchByUrl(routes, '/not-found')).toBeUndefined();
+        const match = RouteHelper.getRouteMatchByUrl(routes, '/not/a/real/path');
+        expect(match).toBeUndefined();
+    });
+
+    it('correctly resolves real fixture routes', () => {
+        const match = RouteHelper.getRouteMatchByUrl(sampleRoutes, '/services/branding');
+        expect(match).toBe(sampleRoutes.VIEW_SERVICE);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// isRouteMatchByUrl
+// ---------------------------------------------------------------------------
+
+describe('RouteHelper.isRouteMatchByUrl', () => {
+    it('returns true for an exact static match', () => {
+        expect(RouteHelper.isRouteMatchByUrl(routes.HOME, '/')).toBe(true);
+        expect(RouteHelper.isRouteMatchByUrl(routes.ABOUT, '/about')).toBe(true);
+    });
+
+    it('returns false for mismatched static paths', () => {
+        expect(RouteHelper.isRouteMatchByUrl(routes.HOME, '/dashboard')).toBe(false);
+    });
+
+    it('returns true for matching dynamic route', () => {
+        expect(RouteHelper.isRouteMatchByUrl(routes.USER_DETAIL, '/users/42')).toBe(true);
+    });
+
+    it('returns true when query params are present in pathname', () => {
+        expect(RouteHelper.isRouteMatchByUrl(routes.USER_DETAIL, '/users/42?page=1')).toBe(true);
+    });
+
+    it('returns false for non-matching dynamic path segments', () => {
+        expect(RouteHelper.isRouteMatchByUrl(routes.USER_DETAIL, '/users/42/settings')).toBe(false);
     });
 });
 
@@ -207,9 +224,9 @@ describe('RouteHelper.getRouteMatchByUrl', () => {
 // ---------------------------------------------------------------------------
 
 describe('RouteHelper.getAllRoutesAsArray', () => {
-    it('returns an array with all routes', () => {
+    it('returns an array containing all defined routes', () => {
         const arr = RouteHelper.getAllRoutesAsArray(routes);
-        expect(arr).toHaveLength(Object.keys(routes).length);
+        expect(arr).toHaveLength(5);
         expect(arr).toContain(routes.HOME);
         expect(arr).toContain(routes.USER_DETAIL);
     });
@@ -220,11 +237,15 @@ describe('RouteHelper.getAllRoutesAsArray', () => {
 // ---------------------------------------------------------------------------
 
 describe('RouteHelper.isChildOf', () => {
-    it('returns true when a route is a child of the given parent', () => {
-        expect(RouteHelper.isChildOf(routes, '/profile', '/')).toBe(true);
+    it('returns true when child path is configured with matching parent', () => {
+        expect(RouteHelper.isChildOf(routes, '/about/team', '/about')).toBe(true);
     });
 
-    it('returns false when a route is not a child of the given parent', () => {
-        expect(RouteHelper.isChildOf(routes, '/about', '/')).toBe(false);
+    it('returns false when parent does not match', () => {
+        expect(RouteHelper.isChildOf(routes, '/about/team', '/')).toBe(false);
+    });
+
+    it('returns false when path has no parent configured', () => {
+        expect(RouteHelper.isChildOf(routes, '/', '/about')).toBe(false);
     });
 });

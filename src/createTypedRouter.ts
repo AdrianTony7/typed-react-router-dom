@@ -22,7 +22,7 @@ import type {
 // Types
 // ---------------------------------------------------------------------------
 
-type ScopedAppLinkProps<R extends Route> = Omit<LinkProps, 'to'> & {
+type ScopedTypedLinkProps<R extends Route> = Omit<LinkProps, 'to'> & {
     route: R;
     query?: Partial<RouteQueryParams<R>>;
 } & DynamicRouteParam<R>;
@@ -47,21 +47,14 @@ export interface TypedRouter<M extends RoutingMap> {
      * ```
      */
     TypedLink: <R extends M[keyof M]>(
-        props: React.PropsWithChildren<ScopedAppLinkProps<R>>
+        props: React.PropsWithChildren<ScopedTypedLinkProps<R>>
     ) => React.ReactElement;
 
     /**
      * Alias for `TypedLink`.
      */
     Link: <R extends M[keyof M]>(
-        props: React.PropsWithChildren<ScopedAppLinkProps<R>>
-    ) => React.ReactElement;
-
-    /**
-     * @deprecated Renamed to `TypedLink`. `AppLink` is retained for backward compatibility.
-     */
-    AppLink: <R extends M[keyof M]>(
-        props: React.PropsWithChildren<ScopedAppLinkProps<R>>
+        props: React.PropsWithChildren<ScopedTypedLinkProps<R>>
     ) => React.ReactElement;
 
     /**
@@ -180,7 +173,7 @@ export function createTypedRouter<M extends RoutingMap>(routesMap: M): TypedRout
 
     // --- TypedLink ---
     function TypedLink<R extends M[keyof M]>(
-        props: React.PropsWithChildren<ScopedAppLinkProps<R>>
+        props: React.PropsWithChildren<ScopedTypedLinkProps<R>>
     ): React.ReactElement {
         const { children, route, params, query, ...linkProps } = props;
         const href = RouteHelper.constructHref(
@@ -313,7 +306,6 @@ export function createTypedRouter<M extends RoutingMap>(routesMap: M): TypedRout
     return {
         TypedLink,
         Link: TypedLink,
-        AppLink: TypedLink,
         TypedRoute,
         RouteComponent: TypedRoute,
         getHref,

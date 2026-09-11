@@ -8,7 +8,7 @@ import type { DynamicRouteParam, Route, RouteParams, RouteQueryParams } from './
 type LinkToProps = Omit<LinkProps, 'to'>;
 
 /**
- * Props for the `<TypedLink />` component.
+ * Props for the `<TypedLink />` / `<Link />` component.
  * - `route`: The typed Route object to link to.
  * - `params`: Required params if the route has dynamic segments (type-checked automatically).
  * - `query`: Optional query parameters (type-checked automatically if declared on the route).
@@ -19,12 +19,6 @@ export type TypedLinkProps<R extends Route> = LinkToProps & {
     /** Optional typed query parameters. */
     query?: Partial<RouteQueryParams<R>>;
 } & DynamicRouteParam<R>;
-
-/**
- * Props for the legacy `<AppLink />` component.
- * @deprecated Renamed to `TypedLinkProps`. `AppLinkProps` will be removed in a future version.
- */
-export type AppLinkProps<R extends Route> = TypedLinkProps<R>;
 
 /**
  * A type-safe `<Link />` component that wraps react-router-dom's `Link`.
@@ -66,8 +60,3 @@ export function TypedLink<R extends Route>(
  * Alias for `TypedLink` that can directly replace React Router's `<Link />` with type safety.
  */
 export const Link = TypedLink;
-
-/**
- * @deprecated Renamed to `TypedLink`. `AppLink` is retained for backward compatibility and will be removed in a future version.
- */
-export const AppLink = TypedLink;

@@ -48,9 +48,7 @@ export class AppRouterService {
         queryOrNewTab?: Partial<RouteQueryParams<R>> | boolean,
         newTab: boolean = false
     ): void {
-        const expectedKeys = route.paramKeys && route.paramKeys.length > 0
-            ? (route.paramKeys as readonly string[])
-            : RouteHelper.extractParamKeysFromPath(route.path);
+        const expectedKeys = RouteHelper.extractParamKeysFromPath(route.path);
 
         if (!params && expectedKeys.length > 0) {
             throw new Error(

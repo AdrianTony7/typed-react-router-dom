@@ -1,6 +1,6 @@
 {
   "name": "typed-react-router-dom",
-  "version": "0.3.0",
+  "version": "1.0.0",
   "description": "Type-safe routing, navigation, components, and hooks for React Router Dom",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",

@@ -2,7 +2,7 @@ import React from 'react';
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Routes } from 'react-router-dom';
-import { TypedLink, Link, AppLink } from '../src/TypedLink';
+import { TypedLink, Link } from '../src/TypedLink';
 import { TypedRoute, RouteComponent } from '../src/TypedRoute';
 import { createTypedRouter } from '../src/createTypedRouter';
 import { defineRoutes } from '../src/types';
@@ -15,7 +15,6 @@ interface UserQuery {
 const routes = defineRoutes({
     HOME: { path: '/', name: 'Home' },
     ABOUT: { path: '/about', name: 'About' },
-    // Route without paramKeys (auto-inferred)
     USER_DETAIL: {
         path: '/users/:id',
         name: 'User Detail',
@@ -33,7 +32,7 @@ function renderInRouter(ui: React.ReactElement) {
     return render(<MemoryRouter>{ui}</MemoryRouter>);
 }
 
-describe('<TypedLink /> & aliases (<Link />, <AppLink />)', () => {
+describe('<TypedLink /> & <Link />', () => {
     it('renders a link to a static route using TypedLink', () => {
         renderInRouter(<TypedLink route={routes.HOME}>Home</TypedLink>);
         const link = screen.getByRole('link', { name: 'Home' });
@@ -47,13 +46,7 @@ describe('<TypedLink /> & aliases (<Link />, <AppLink />)', () => {
         expect(link.getAttribute('href')).toBe('/');
     });
 
-    it('renders a link using AppLink backward-compat alias', () => {
-        renderInRouter(<AppLink route={routes.HOME}>Home AppLink</AppLink>);
-        const link = screen.getByRole('link', { name: 'Home AppLink' });
-        expect(link.getAttribute('href')).toBe('/');
-    });
-
-    it('renders a link with a single dynamic param resolved without paramKeys', () => {
+    it('renders a link with a single dynamic param resolved', () => {
         renderInRouter(
             <TypedLink route={routes.USER_DETAIL} params={{ id: '42' }}>
                 View User

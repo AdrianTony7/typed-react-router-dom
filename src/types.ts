@@ -13,7 +13,7 @@ export type ExtractParamKeys<Path extends string> =
 
 /**
  * Interface representing a single, type-safe route.
- * Each route has a unique path, optional parent route, display title, icon, dynamic parameter keys, and query parameters.
+ * Each route has a unique path, optional parent route, display title, icon, and optional query parameters type carrier.
  */
 export interface Route<
     TPath extends string = string,
@@ -27,25 +27,13 @@ export interface Route<
     parent?: string;
     /** Optional icon component (e.g., from Lucide or any React icon library). */
     icon?: ComponentType<any>;
-    /**
-     * An array of expected path parameter keys (e.g., ['id']).
-     * @deprecated Path parameters are now automatically inferred directly from the `path` string (e.g. `':id'`).
-     * `paramKeys` will be removed in the next major version.
-     */
-    paramKeys?: readonly string[];
-    /**
-     * An array of expected query parameter keys (e.g., ['tab', 'page']).
-     * @deprecated Use `queryType` instead for full compile-time type-safety across unions, booleans, and numbers.
-     * `queryKeys` will be removed in the next major version.
-     */
-    queryKeys?: readonly string[];
     /** Optional compile-time type carrier for typed query parameters. */
     queryType?: TQuery;
 }
 
 /**
  * Interface defining the structure of a routing configuration dictionary.
- * It maps route identifiers (keys) to their respective Route objects.
+ * It maps route identifiers (keys) to their respective Route objects.\
  */
 export interface RoutingMap {
     [key: string]: Route;
@@ -54,26 +42,20 @@ export interface RoutingMap {
 /**
  * Utility type to extract required path parameters from a Route definition.
  * - Automatically infers `:param` tokens from `route.path`.
- * - Falls back to `paramKeys` if defined on the Route for backward compatibility.
- * - Otherwise evaluates to `undefined`.
+ * - If no dynamic parameters exist, evaluates to `undefined`.
  */
 export type RouteParams<R extends Route> = [ExtractParamKeys<R['path']>] extends [never]
-    ? R['paramKeys'] extends readonly string[]
-        ? { [K in R['paramKeys'][number]]: string }
-        : undefined
+    ? undefined
     : { [K in ExtractParamKeys<R['path']>]: string };
 
 /**
  * Utility type to extract query parameters from a Route definition.
  * - If `queryType` is explicitly provided, it extracts that type.
- * - If `queryKeys` is defined, it produces a partial object of those keys.
  * - Otherwise, it evaluates to `Record<string, any>`.
  */
 export type RouteQueryParams<R extends Route> = R extends { queryType: infer Q }
     ? Q
-    : R extends { queryKeys: readonly (infer K extends string)[] }
-        ? Partial<Record<K, string | number | boolean>>
-        : Record<string, any>;
+    : Record<string, any>;
 
 /**
  * Helper type for arguments requiring dynamic parameters if defined on the route.

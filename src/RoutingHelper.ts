@@ -2,7 +2,7 @@ import { generatePath } from 'react-router-dom';
 import type { Route, RoutingMap, RouteParams, RouteQueryParams } from './types';
 
 /**
- * A generic helper class for working with any typed routing map.
+ * Utility class providing static helper methods for working with typed Route definitions.
  * All methods are static and operate purely on the provided route definitions.
  */
 export class RouteHelper {
@@ -42,9 +42,7 @@ export class RouteHelper {
         params?: RouteParams<R>,
         query?: Partial<RouteQueryParams<R>>
     ): string {
-        const expectedKeys = route.paramKeys && route.paramKeys.length > 0
-            ? (route.paramKeys as readonly string[])
-            : this.extractParamKeysFromPath(route.path);
+        const expectedKeys = this.extractParamKeysFromPath(route.path);
 
         if (expectedKeys.length > 0 && !params) {
             console.error(
@@ -71,33 +69,52 @@ export class RouteHelper {
     }
 
     /**
-     * Extracts dynamic path parameters from a concrete URL pathname, given a route template.
+     * Extracts query parameters from a search string or full URL.
+     * Returns a simple key-value record of string values.
+     *
+     * @param searchOrUrl - A URL search string (e.g. `'?tab=profile&page=1'`) or a full URL path.
+     * @returns A record containing parsed query parameters.
+     */
+    public static extractQueryParams(searchOrUrl: string): Record<string, string> {
+        if (!searchOrUrl) return {};
+        const queryString = searchOrUrl.includes('?')
+            ? searchOrUrl.slice(searchOrUrl.indexOf('?') + 1)
+            : searchOrUrl.startsWith('?')
+                ? searchOrUrl.slice(1)
+                : '';
+        if (!queryString) return {};
+
+        const searchParams = new URLSearchParams(queryString);
+        const result: Record<string, string> = {};
+        searchParams.forEach((val, key) => {
+            result[key] = val;
+        });
+        return result;
+    }
+
+    /**
+     * Extracts dynamic parameter values from a URL pathname given a Route definition or path template.
+     *
+     * @param routeOrPath - A Route object or a path string pattern with `:param` placeholders.
+     * @param pathname - The actual pathname to extract parameters from.
+     * @returns An object of key-value pairs representing extracted params, or `undefined` if the path doesn't match.
      *
      * @example
-     *   route.path = '/users/:id/posts/:postId'
-     *   pathname   = '/users/42/posts/7'
-     *   returns    → { id: '42', postId: '7' }
-     *
-     * @param routeOrPath - A Route object or a raw path pattern string.
-     * @param pathname - The concrete URL pathname to extract params from.
-     * @returns A `Record<string, string>` of extracted params, or `undefined` if the path does not match.
+     * ```ts
+     * RouteHelper.extractParamsFromPath(routes.USER_DETAIL, '/users/123'); // { id: '123' }
+     * ```
      */
     public static extractParamsFromPath(
         routeOrPath: Route | string,
         pathname: string
     ): Record<string, string> | undefined {
         const routePath = typeof routeOrPath === 'string' ? routeOrPath : routeOrPath.path;
-        const normPathname = pathname.endsWith('/') && pathname.length > 1
-            ? pathname.slice(0, -1)
-            : pathname;
-        const normRoute = routePath.endsWith('/') && routePath.length > 1
-            ? routePath.slice(0, -1)
-            : routePath;
+        const routeSegments = routePath.split('/').filter(Boolean);
+        const pathSegments = pathname.split('/').filter(Boolean);
 
-        const routeSegments = normRoute.split('/').filter(Boolean);
-        const pathSegments = normPathname.split('/').filter(Boolean);
-
-        if (routeSegments.length !== pathSegments.length) return undefined;
+        if (routeSegments.length !== pathSegments.length) {
+            return undefined;
+        }
 
         const params: Record<string, string> = {};
 
@@ -119,61 +136,52 @@ export class RouteHelper {
     }
 
     /**
-     * Extracts query parameters from a URL search string or full URL into a key-value record.
+     * Finds the Route object in a `RoutingMap` that matches a given URL pathname.
+     * Checks static routes first (exact match), then dynamic routes.
      *
-     * @param searchOrUrl - A search query string (e.g. `?tab=profile&page=2`) or a full URL.
-     * @returns A `Record<string, string>` of parsed query parameters.
-     */
-    public static extractQueryParams(searchOrUrl: string): Record<string, string> {
-        if (!searchOrUrl) return {};
-        const queryIndex = searchOrUrl.indexOf('?');
-        if (
-            queryIndex === -1 &&
-            (searchOrUrl.startsWith('/') ||
-                searchOrUrl.startsWith('http://') ||
-                searchOrUrl.startsWith('https://'))
-        ) {
-            return {};
-        }
-        const search =
-            queryIndex !== -1
-                ? searchOrUrl.slice(queryIndex + 1)
-                : searchOrUrl.startsWith('?')
-                ? searchOrUrl.slice(1)
-                : searchOrUrl;
-
-        if (!search) return {};
-        const searchParams = new URLSearchParams(search);
-        const result: Record<string, string> = {};
-        searchParams.forEach((value, key) => {
-            result[key] = value;
-        });
-        return result;
-    }
-
-    /**
-     * Finds the route object in a RoutingMap that matches the given URL pathname.
-     * Handles both static and dynamic path matching.
+     * @param routesMap - The map of routes to search within.
+     * @param pathname - The URL pathname to match against.
+     * @returns The matching Route object, or `undefined` if no match is found.
      *
-     * @param routesMap - The routing map to search through.
-     * @param pathname - The URL pathname string (e.g., `/users/123`).
-     * @returns The matching `Route` object, or `undefined` if not found.
+     * @example
+     * ```ts
+     * const route = RouteHelper.getRouteMatchByUrl(routes, '/users/123');
+     * // route === routes.USER_DETAIL
+     * ```
      */
     public static getRouteMatchByUrl<M extends RoutingMap>(
         routesMap: M,
         pathname: string
     ): M[keyof M] | undefined {
-        const routes = Object.values(routesMap) as M[keyof M][];
-        return routes.find((route) => this.isRouteMatchByUrl(route, pathname));
+        // Strip query string if present
+        const cleanPathname = pathname.split('?')[0];
+
+        // 1. Check exact static match first
+        for (const key of Object.keys(routesMap)) {
+            const route = routesMap[key];
+            if (route && route.path === cleanPathname) {
+                return route as M[keyof M];
+            }
+        }
+
+        // 2. Check dynamic matches
+        for (const key of Object.keys(routesMap)) {
+            const route = routesMap[key];
+            if (route && this.isRouteMatchByUrl(route, cleanPathname)) {
+                return route as M[keyof M];
+            }
+        }
+
+        return undefined;
     }
 
     /**
-     * Determines if a given route matches a URL pathname.
-     * Supports both exact static matching and dynamic segment matching.
+     * Checks whether a given URL pathname matches a Route definition.
+     * Supports both static and dynamic routes.
      *
-     * @param route - The Route object to test.
+     * @param route - The Route object to check against.
      * @param pathname - The URL pathname to match.
-     * @returns `true` if the route matches, `false` otherwise.
+     * @returns `true` if the route matches, `false` otherwise.\
      */
     public static isRouteMatchByUrl(route: Route, pathname: string): boolean {
         // Strip query string if present
@@ -184,9 +192,7 @@ export class RouteHelper {
         const extracted = this.extractParamsFromPath(route, cleanPathname);
         if (!extracted) return false;
 
-        const expectedKeys = route.paramKeys && route.paramKeys.length > 0
-            ? (route.paramKeys as readonly string[])
-            : this.extractParamKeysFromPath(route.path);
+        const expectedKeys = this.extractParamKeysFromPath(route.path);
 
         if (expectedKeys.length > 0) {
             const hasAll = expectedKeys.every((k) => k in extracted);
@@ -213,18 +219,19 @@ export class RouteHelper {
 
     /**
      * Checks whether a given pathname corresponds to a child of a given parent path.
+     * Uses the `parent` property defined on Route objects in the map.
      *
-     * @param routesMap - The routing map to look up the current route.
-     * @param currentPath - The pathname to check.
-     * @param parentPath - The potential parent pathname.
-     * @returns `true` if `currentPath` belongs to `parentPath`, `false` otherwise.
+     * @param routesMap - The map of routes to check within.
+     * @param childPathname - The pathname of the suspected child.
+     * @param parentPathname - The pathname of the parent.
+     * @returns `true` if the route corresponding to `childPathname` has its `parent` set to `parentPathname`.
      */
     public static isChildOf(
         routesMap: RoutingMap,
-        currentPath: string,
-        parentPath: string
+        childPathname: string,
+        parentPathname: string
     ): boolean {
-        const route = this.getRouteMatchByUrl(routesMap, currentPath);
-        return route?.parent === parentPath;
+        const route = this.getRouteMatchByUrl(routesMap, childPathname);
+        return route?.parent === parentPathname;
     }
 }

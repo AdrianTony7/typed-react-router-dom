@@ -116,8 +116,6 @@ const routes = defineRoutes({
 } as const);
 ```
 
-> **Note:** `paramKeys` and `queryKeys` are deprecated and will be removed in version 1.0.0. Path parameters are inferred automatically from `path`, and query parameters should use `queryType`.
-
 ### `createTypedRouter(routes)`
 
 Factory returning components, hooks, a `getHref` helper, and an `AppRouterService` — all scoped to your routes.
@@ -140,7 +138,9 @@ const router = createTypedRouter(routes);
 
 ---
 
-### `<TypedLink />` / `<Link />` (formerly `<AppLink />`)
+### `<TypedLink />` / `<Link />`
+
+Type-safe `<Link />` component with required params and optional query params.
 
 ```tsx
 import { TypedLink, Link } from 'typed-react-router-dom';
@@ -159,8 +159,6 @@ import { routes } from './routes';
 </TypedLink>
 ```
 
-> **Note:** `<AppLink />` is kept as a deprecated alias for backwards compatibility and will be removed in version 1.0.0.
-
 ---
 
 ### `<TypedRoute />` / `<RouteComponent />`
@@ -176,25 +174,6 @@ import { routes } from './routes';
   <TypedRoute path={routes.HOME.path} element={<Home />} />
   <RouteComponent path={routes.USER_DETAIL.path} element={<UserDetail />} />
 </Routes>
-```
-
----
-
-### `useTypedNavigate(route)`
-
-```tsx
-import { useTypedNavigate } from 'typed-react-router-dom';
-import { routes } from './routes';
-
-function UserButton({ id }: { id: string }) {
-  const goToUser = useTypedNavigate(routes.USER_DETAIL);
-
-  return (
-    <button onClick={() => goToUser({ id }, { tab: 'profile' })}>
-      View Profile
-    </button>
-  );
-}
 ```
 
 ---
@@ -292,11 +271,6 @@ interface Route<TPath extends string = string, TQuery extends Record<string, any
   parent?: string;                // Parent route path for breadcrumbs / nesting
   icon?: ComponentType<any>;      // Optional icon component
   queryType?: TQuery;             // Type carrier for compile-time query params
-
-  /** @deprecated Path params are now auto-inferred from path. Will be removed in v1.0.0 */
-  paramKeys?: readonly string[];
-  /** @deprecated Use queryType instead. Will be removed in v1.0.0 */
-  queryKeys?: readonly string[];
 }
 ```
 

@@ -38,9 +38,9 @@ export { defineRoutes } from './types';
 // Route helper utilities
 export { RouteHelper } from './RoutingHelper';
 
-// TypedLink / Link / AppLink component
-export { TypedLink, Link, AppLink } from './TypedLink';
-export type { TypedLinkProps, AppLinkProps } from './TypedLink';
+// TypedLink / Link component
+export { TypedLink, Link } from './TypedLink';
+export type { TypedLinkProps } from './TypedLink';
 
 // TypedRoute / RouteComponent component
 export { TypedRoute, RouteComponent } from './TypedRoute';
