@@ -27,7 +27,61 @@ pnpm add typed-react-router-dom react-router-dom
 npm install typed-react-router-dom react-router-dom
 ```
 
-**Peer dependencies:** `react ^18 || ^19`, `react-dom ^18 || ^19`, `react-router-dom ^6 || ^7`
+**Peer dependencies:** `react ^18 || ^19`, `react-dom ^18 || ^19`, `react-router-dom ^6 || ^7 || ^8`
+
+### Using `react-router` directly (skipping `react-router-dom`)
+
+`typed-react-router-dom` imports from `react-router-dom`, but `react-router-dom` is just a thin re-export over the `react-router` core. Everything this library uses (`generatePath`, `<Link />`, `<Route />`, `useNavigate`, `useParams`, `useLocation`, `useSearchParams`, and types) already lives in `react-router`, so you can skip the middleman entirely.
+
+We recommend `react-router@^7` if you want the leanest bundle — `react-router@^8` is also fully supported.
+
+```bash
+pnpm add typed-react-router-dom react-router@^7
+# or, for v8:
+# pnpm add typed-react-router-dom react-router@^8
+```
+
+All you need is a Vite coercion so the library's internal `react-router-dom` imports resolve to `react-router`:
+
+```ts
+// vite.config.ts
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+
+export default defineConfig({
+  plugins: [react()],
+  resolve: {
+    alias: [{ find: /^react-router-dom$/, replacement: 'react-router' }],
+  },
+});
+```
+
+That's it. In your app code, import from `react-router` instead of `react-router-dom`:
+
+```tsx
+// before
+import { Routes, useNavigate } from 'react-router-dom';
+
+// after
+import { Routes, useNavigate } from 'react-router';
+```
+
+> **TypeScript note:** Vite resolves the alias at build/dev time. If you also run `tsc --noEmit`, add a matching path mapping so the library's `react-router-dom` types resolve:
+>
+> ```json
+> // tsconfig.json
+> {
+>   "compilerOptions": {
+>     "paths": {
+>       "react-router-dom": ["./node_modules/react-router"]
+>     }
+>   }
+> }
+> ```
+>
+> Other bundlers work the same way — e.g. webpack `resolve.alias: { 'react-router-dom': 'react-router' }`.
+>
+> Your package manager may still warn about the unmet `react-router-dom` peer dependency when you skip it. That's expected and safe to ignore — the alias satisfies it at runtime/bundle time.
 
 ---
 
