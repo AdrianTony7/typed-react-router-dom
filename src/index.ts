@@ -22,41 +22,36 @@
 
 // Core types
 export type {
-    Route,
-    RoutingMap,
-    RouteParams,
-    RouteQueryParams,
-    DynamicRouteParam,
-    TypedNavigationProps,
-    TypedNavigationPropsWithNewTab,
-    ExtractParamKeys,
-} from './types';
+  Route,
+  RoutingMap,
+  RouteParams,
+  RouteQueryParams,
+  DynamicRouteParam,
+  TypedNavigationProps,
+  TypedNavigationPropsWithNewTab,
+  ExtractParamKeys,
+} from "./types";
 
 // defineRoutes helper
-export { defineRoutes } from './types';
+export { defineRoutes } from "./types";
 
 // Route helper utilities
-export { RouteHelper } from './RoutingHelper';
+export { RouteHelper } from "./RoutingHelper";
 
 // TypedLink / Link component
-export { TypedLink, Link } from './TypedLink';
-export type { TypedLinkProps } from './TypedLink';
+export { TypedLink, Link } from "./TypedLink";
+export type { TypedLinkProps } from "./TypedLink";
 
 // TypedRoute / RouteComponent component
-export { TypedRoute, RouteComponent } from './TypedRoute';
-export type { TypedRouteProps } from './TypedRoute';
+export { TypedRoute, RouteComponent } from "./TypedRoute";
+export type { TypedRouteProps } from "./TypedRoute";
 
 // AppRouterService (singleton + class)
-export { AppRouterService, appRouter } from './AppRouterService';
+export { AppRouterService, appRouter } from "./AppRouterService";
 
 // Standalone hooks
-export {
-    useTypedNavigate,
-    useTypedParams,
-    useTypedSearchParams,
-    useTypedMatch,
-} from './hooks';
+export { useTypedNavigate, useTypedParams, useTypedSearchParams, useTypedMatch } from "./hooks";
 
 // createTypedRouter factory
-export { createTypedRouter } from './createTypedRouter';
-export type { TypedRouter } from './createTypedRouter';
+export { createTypedRouter } from "./createTypedRouter";
+export type { TypedRouter } from "./createTypedRouter";

@@ -1,11 +1,11 @@
-import React from 'react';
-import type { LinkProps } from 'react-router-dom';
-import { Link as ReactRouterLink } from 'react-router-dom';
-import { RouteHelper } from './RoutingHelper';
-import type { DynamicRouteParam, Route, RouteParams, RouteQueryParams } from './types';
+import React from "react";
+import type { LinkProps } from "react-router-dom";
+import { Link as ReactRouterLink } from "react-router-dom";
+import { RouteHelper } from "./RoutingHelper";
+import type { DynamicRouteParam, Route, RouteParams, RouteQueryParams } from "./types";
 
 /** All Link props except `to`, which is derived from `route` + `params` + `query`. */
-type LinkToProps = Omit<LinkProps, 'to'>;
+type LinkToProps = Omit<LinkProps, "to">;
 
 /**
  * Props for the `<TypedLink />` / `<Link />` component.
@@ -14,10 +14,10 @@ type LinkToProps = Omit<LinkProps, 'to'>;
  * - `query`: Optional query parameters (type-checked automatically if declared on the route).
  */
 export type TypedLinkProps<R extends Route> = LinkToProps & {
-    /** The Route object to navigate to. */
-    route: R;
-    /** Optional typed query parameters. */
-    query?: Partial<RouteQueryParams<R>>;
+  /** The Route object to navigate to. */
+  route: R;
+  /** Optional typed query parameters. */
+  query?: Partial<RouteQueryParams<R>>;
 } & DynamicRouteParam<R>;
 
 /**
@@ -40,20 +40,18 @@ export type TypedLinkProps<R extends Route> = LinkToProps & {
  * </TypedLink>
  * ```
  */
-export function TypedLink<R extends Route>(
-    props: React.PropsWithChildren<TypedLinkProps<R>>
-) {
-    const { children, route, params, query, ...linkProps } = props;
-    const href = RouteHelper.constructHref(
-        route,
-        params as RouteParams<R>,
-        query as Partial<RouteQueryParams<R>>
-    );
-    return (
-        <ReactRouterLink to={href} {...linkProps}>
-            {children}
-        </ReactRouterLink>
-    );
+export function TypedLink<R extends Route>(props: React.PropsWithChildren<TypedLinkProps<R>>) {
+  const { children, route, params, query, ...linkProps } = props;
+  const href = RouteHelper.constructHref(
+    route,
+    params as RouteParams<R>,
+    query as Partial<RouteQueryParams<R>>,
+  );
+  return (
+    <ReactRouterLink to={href} {...linkProps}>
+      {children}
+    </ReactRouterLink>
+  );
 }
 
 /**

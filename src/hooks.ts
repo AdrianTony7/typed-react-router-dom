@@ -1,7 +1,7 @@
-import { useCallback, useMemo } from 'react';
-import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import type { Route, RouteParams, RouteQueryParams, RoutingMap } from './types';
-import { RouteHelper } from './RoutingHelper';
+import { useCallback, useMemo } from "react";
+import { useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import type { Route, RouteParams, RouteQueryParams, RoutingMap } from "./types";
+import { RouteHelper } from "./RoutingHelper";
 
 // ---------------------------------------------------------------------------
 // useTypedNavigate
@@ -21,37 +21,37 @@ import { RouteHelper } from './RoutingHelper';
  * ```
  */
 export function useTypedNavigate<R extends Route>(
-    route: R
+  route: R,
 ): {
-    (params: RouteParams<R>, newTab?: boolean): void;
-    (params: RouteParams<R>, query?: Partial<RouteQueryParams<R>>, newTab?: boolean): void;
+  (params: RouteParams<R>, newTab?: boolean): void;
+  (params: RouteParams<R>, query?: Partial<RouteQueryParams<R>>, newTab?: boolean): void;
 } {
-    const navigate = useNavigate();
-    return useCallback(
-        (
-            params: RouteParams<R>,
-            queryOrNewTab?: Partial<RouteQueryParams<R>> | boolean,
-            newTab: boolean = false
-        ) => {
-            let query: Partial<RouteQueryParams<R>> | undefined;
-            let openNewTab = newTab;
+  const navigate = useNavigate();
+  return useCallback(
+    (
+      params: RouteParams<R>,
+      queryOrNewTab?: Partial<RouteQueryParams<R>> | boolean,
+      newTab: boolean = false,
+    ) => {
+      let query: Partial<RouteQueryParams<R>> | undefined;
+      let openNewTab = newTab;
 
-            if (typeof queryOrNewTab === 'boolean') {
-                openNewTab = queryOrNewTab;
-            } else if (queryOrNewTab && typeof queryOrNewTab === 'object') {
-                query = queryOrNewTab;
-            }
+      if (typeof queryOrNewTab === "boolean") {
+        openNewTab = queryOrNewTab;
+      } else if (queryOrNewTab && typeof queryOrNewTab === "object") {
+        query = queryOrNewTab;
+      }
 
-            const href = RouteHelper.constructHref(route, params, query);
-            if (openNewTab) {
-                window.open(href, '_blank');
-            } else {
-                navigate(href);
-            }
-        },
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-        [navigate, route.path]
-    );
+      const href = RouteHelper.constructHref(route, params, query);
+      if (openNewTab) {
+        window.open(href, "_blank");
+      } else {
+        navigate(href);
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [navigate, route.path],
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -70,12 +70,12 @@ export function useTypedNavigate<R extends Route>(
  * ```
  */
 export function useTypedParams<R extends Route>(
-    _route: R
+  _route: R,
 ): RouteParams<R> extends undefined ? Record<string, string | undefined> : RouteParams<R> {
-    // useParams always returns Record<string, string | undefined> at runtime.
-    // We cast to the inferred typed params for the caller's convenience.
-    const params = useParams();
-    return params as ReturnType<typeof useTypedParams<R>>;
+  // useParams always returns Record<string, string | undefined> at runtime.
+  // We cast to the inferred typed params for the caller's convenience.
+  const params = useParams();
+  return params as ReturnType<typeof useTypedParams<R>>;
 }
 
 // ---------------------------------------------------------------------------
@@ -94,47 +94,47 @@ export function useTypedParams<R extends Route>(
  * ```
  */
 export function useTypedSearchParams<R extends Route>(_route?: R) {
-    const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
 
-    const query = useMemo(() => {
-        const result: Record<string, string> = {};
-        searchParams.forEach((val, key) => {
-            result[key] = val;
+  const query = useMemo(() => {
+    const result: Record<string, string> = {};
+    searchParams.forEach((val, key) => {
+      result[key] = val;
+    });
+    return result as unknown as Partial<RouteQueryParams<R>>;
+  }, [searchParams]);
+
+  const setQuery = useCallback(
+    (
+      next:
+        | Partial<RouteQueryParams<R>>
+        | ((prev: Partial<RouteQueryParams<R>>) => Partial<RouteQueryParams<R>>),
+      navigateOptions?: Parameters<typeof setSearchParams>[1],
+    ) => {
+      setSearchParams((prev) => {
+        const current: Record<string, string> = {};
+        prev.forEach((v, k) => {
+          current[k] = v;
         });
-        return result as unknown as Partial<RouteQueryParams<R>>;
-    }, [searchParams]);
+        const resolved =
+          typeof next === "function"
+            ? next(current as unknown as Partial<RouteQueryParams<R>>)
+            : next;
+        const updated = new URLSearchParams();
+        if (resolved) {
+          for (const [k, v] of Object.entries(resolved)) {
+            if (v !== undefined && v !== null) {
+              updated.set(k, String(v));
+            }
+          }
+        }
+        return updated;
+      }, navigateOptions);
+    },
+    [setSearchParams],
+  );
 
-    const setQuery = useCallback(
-        (
-            next:
-                | Partial<RouteQueryParams<R>>
-                | ((prev: Partial<RouteQueryParams<R>>) => Partial<RouteQueryParams<R>>),
-            navigateOptions?: Parameters<typeof setSearchParams>[1]
-        ) => {
-            setSearchParams((prev) => {
-                const current: Record<string, string> = {};
-                prev.forEach((v, k) => {
-                    current[k] = v;
-                });
-                const resolved =
-                    typeof next === 'function'
-                        ? next(current as unknown as Partial<RouteQueryParams<R>>)
-                        : next;
-                const updated = new URLSearchParams();
-                if (resolved) {
-                    for (const [k, v] of Object.entries(resolved)) {
-                        if (v !== undefined && v !== null) {
-                            updated.set(k, String(v));
-                        }
-                    }
-                }
-                return updated;
-            }, navigateOptions);
-        },
-        [setSearchParams]
-    );
-
-    return [query, setQuery, searchParams] as const;
+  return [query, setQuery, searchParams] as const;
 }
 
 // ---------------------------------------------------------------------------
@@ -153,14 +153,16 @@ export function useTypedSearchParams<R extends Route>(_route?: R) {
  * }
  * ```
  */
-export function useTypedMatch<M extends RoutingMap>(routesMap: M): {
-    route: M[keyof M] | undefined;
-    params: Record<string, string> | undefined;
-    query: Record<string, string>;
+export function useTypedMatch<M extends RoutingMap>(
+  routesMap: M,
+): {
+  route: M[keyof M] | undefined;
+  params: Record<string, string> | undefined;
+  query: Record<string, string>;
 } {
-    const { pathname, search } = useLocation();
-    const route = RouteHelper.getRouteMatchByUrl(routesMap, pathname) as M[keyof M] | undefined;
-    const params = route ? RouteHelper.extractParamsFromPath(route, pathname) : undefined;
-    const query = RouteHelper.extractQueryParams(search);
-    return { route, params, query };
+  const { pathname, search } = useLocation();
+  const route = RouteHelper.getRouteMatchByUrl(routesMap, pathname) as M[keyof M] | undefined;
+  const params = route ? RouteHelper.extractParamsFromPath(route, pathname) : undefined;
+  const query = RouteHelper.extractQueryParams(search);
+  return { route, params, query };
 }

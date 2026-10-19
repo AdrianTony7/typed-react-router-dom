@@ -2,6 +2,30 @@
   "name": "typed-react-router-dom",
   "version": "1.0.1",
   "description": "Type-safe routing, navigation, components, and hooks for React Router Dom",
+  "keywords": [
+    "react",
+    "react-router",
+    "react-router-dom",
+    "router",
+    "routing",
+    "type-safe",
+    "typescript"
+  ],
+  "homepage": "https://github.com/AdrianTony7/Typed-React-Router-Dom#readme",
+  "bugs": {
+    "url": "https://github.com/AdrianTony7/Typed-React-Router-Dom/issues"
+  },
+  "license": "MIT",
+  "author": "AdrianTony7",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AdrianTony7/Typed-React-Router-Dom.git"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "sideEffects": false,
   "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.mts",
@@ -17,49 +41,22 @@
       }
     }
   },
-  "files": [
-    "dist"
-  ],
-  "sideEffects": false,
   "scripts": {
-    "build": "tsdown",
-    "dev": "tsdown --watch",
+    "build": "vp pack",
+    "dev": "vp pack --watch",
+    "check": "vp check",
+    "check:fix": "vp check --fix",
+    "lint": "vp lint",
+    "format": "vp fmt",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
+    "test": "vp test run tests",
+    "test:unit": "vp test run tests",
+    "test:watch": "vp test tests",
     "prepack": "pnpm run build",
-    "prepublishOnly": "pnpm run typecheck && pnpm run test"
-  },
-  "keywords": [
-    "react",
-    "react-router",
-    "react-router-dom",
-    "typescript",
-    "type-safe",
-    "routing",
-    "router"
-  ],
-  "author": "AdrianTony7",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/AdrianTony7/Typed-React-Router-Dom.git"
-  },
-  "bugs": {
-    "url": "https://github.com/AdrianTony7/Typed-React-Router-Dom/issues"
-  },
-  "homepage": "https://github.com/AdrianTony7/Typed-React-Router-Dom#readme",
-  "license": "MIT",
-  "type": "module",
-  "engines": {
-    "node": ">=18"
-  },
-  "peerDependencies": {
-    "react": "^18.0.0 || ^19.0.0",
-    "react-dom": "^18.0.0 || ^19.0.0",
-    "react-router-dom": "^6.0.0 || ^7.0.0 || ^8.0.0"
+    "prepublishOnly": "pnpm run check && pnpm run typecheck && pnpm run test:unit && pnpm run build"
   },
   "devDependencies": {
     "@testing-library/react": "^16.0.0",
-    "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "happy-dom": "^16.0.0",
@@ -67,8 +64,15 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router-dom": "^7.1.0",
-    "tsdown": "^0.23.0",
     "typescript": "^7.0.2",
-    "vitest": "^3.0.0"
+    "vite-plus": "catalog:"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0 || ^19.0.0",
+    "react-dom": "^18.0.0 || ^19.0.0",
+    "react-router-dom": "^6.0.0 || ^7.0.0 || ^8.0.0"
+  },
+  "engines": {
+    "node": ">=18"
   }
 }

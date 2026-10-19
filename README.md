@@ -45,13 +45,13 @@ All you need is a Vite coercion so the library's internal `react-router-dom` imp
 
 ```ts
 // vite.config.ts
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
 
 export default defineConfig({
   plugins: [react()],
   resolve: {
-    alias: [{ find: /^react-router-dom$/, replacement: 'react-router' }],
+    alias: [{ find: /^react-router-dom$/, replacement: "react-router" }],
   },
 });
 ```
@@ -60,10 +60,10 @@ That's it. In your app code, import from `react-router` instead of `react-router
 
 ```tsx
 // before
-import { Routes, useNavigate } from 'react-router-dom';
+import { Routes, useNavigate } from "react-router-dom";
 
 // after
-import { Routes, useNavigate } from 'react-router';
+import { Routes, useNavigate } from "react-router";
 ```
 
 > **TypeScript note:** Vite resolves the alias at build/dev time. If you also run `tsc --noEmit`, add a matching path mapping so the library's `react-router-dom` types resolve:
@@ -93,21 +93,21 @@ Dynamic parameters like `:id` are **automatically inferred** from the path strin
 
 ```ts
 // src/routes.ts
-import { defineRoutes, createTypedRouter } from 'typed-react-router-dom';
+import { defineRoutes, createTypedRouter } from "typed-react-router-dom";
 
 interface UserDetailQuery {
-  tab?: 'profile' | 'settings' | 'activity';
+  tab?: "profile" | "settings" | "activity";
   active?: boolean;
   page?: number;
 }
 
 export const routes = defineRoutes({
-  HOME:        { path: '/',          name: 'Home' },
-  ABOUT:       { path: '/about',     name: 'About' },
+  HOME: { path: "/", name: "Home" },
+  ABOUT: { path: "/about", name: "About" },
   // ':id' is automatically inferred as { id: string }
   USER_DETAIL: {
-    path: '/users/:id',
-    name: 'User Detail',
+    path: "/users/:id",
+    name: "User Detail",
     queryType: {} as UserDetailQuery,
   },
 } as const);
@@ -119,10 +119,10 @@ export const router = createTypedRouter(routes);
 
 ```tsx
 // src/App.tsx
-import { Routes } from 'react-router-dom';
-import { router, routes } from './routes';
-import { HomePage } from './pages/HomePage';
-import { UserDetailPage } from './pages/UserDetailPage';
+import { Routes } from "react-router-dom";
+import { router, routes } from "./routes";
+import { HomePage } from "./pages/HomePage";
+import { UserDetailPage } from "./pages/UserDetailPage";
 
 export function App() {
   return (
@@ -138,9 +138,9 @@ export function App() {
 
 ```tsx
 // src/NavigationSetter.tsx
-import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { router } from './routes';
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { router } from "./routes";
 
 export function NavigationSetter() {
   const navigate = useNavigate();
@@ -161,11 +161,11 @@ Preserves literal string types and infers path parameters automatically:
 
 ```ts
 const routes = defineRoutes({
-  HOME:        { path: '/', name: 'Home' },
+  HOME: { path: "/", name: "Home" },
   USER_DETAIL: {
-    path: '/users/:id',
-    name: 'User Detail',
-    queryType: {} as { tab?: 'profile' | 'settings'; page?: number },
+    path: "/users/:id",
+    name: "User Detail",
+    queryType: {} as { tab?: "profile" | "settings"; page?: number },
   },
 } as const);
 ```
@@ -178,17 +178,17 @@ Factory returning components, hooks, a `getHref` helper, and an `AppRouterServic
 const router = createTypedRouter(routes);
 ```
 
-| Member | Description |
-|---|---|
-| `router.TypedRoute` / `router.RouteComponent` | Type-safe `<Route />` component strictly typed to your route map's paths |
-| `router.TypedLink` / `router.Link` | Type-safe `<Link />` component supporting `params` & `query` |
-| `router.getHref(route, params?, query?)` | Constructs a URL string using `generatePath` + query string serialization |
-| `router.useTypedNavigate(route)` | Returns a typed navigation callback accepting `(params, query?, newTab?)` |
-| `router.useTypedParams(route)` | Returns typed path params from the current URL |
-| `router.useTypedSearchParams(route?)` | Returns `[query, setQuery, searchParams]` for typed query params |
-| `router.useTypedMatch()` | Returns matched route + path params + parsed query record for the current URL |
-| `router.routerService` | `AppRouterService` instance for programmatic navigation |
-| `router.routes` | The original routes map |
+| Member                                        | Description                                                                   |
+| --------------------------------------------- | ----------------------------------------------------------------------------- |
+| `router.TypedRoute` / `router.RouteComponent` | Type-safe `<Route />` component strictly typed to your route map's paths      |
+| `router.TypedLink` / `router.Link`            | Type-safe `<Link />` component supporting `params` & `query`                  |
+| `router.getHref(route, params?, query?)`      | Constructs a URL string using `generatePath` + query string serialization     |
+| `router.useTypedNavigate(route)`              | Returns a typed navigation callback accepting `(params, query?, newTab?)`     |
+| `router.useTypedParams(route)`                | Returns typed path params from the current URL                                |
+| `router.useTypedSearchParams(route?)`         | Returns `[query, setQuery, searchParams]` for typed query params              |
+| `router.useTypedMatch()`                      | Returns matched route + path params + parsed query record for the current URL |
+| `router.routerService`                        | `AppRouterService` instance for programmatic navigation                       |
+| `router.routes`                               | The original routes map                                                       |
 
 ---
 
@@ -220,14 +220,14 @@ import { routes } from './routes';
 Type-safe replacement for `react-router-dom`'s `<Route />`. Guarantees that the route path matches defined routes.
 
 ```tsx
-import { Routes } from 'react-router-dom';
-import { TypedRoute, RouteComponent } from 'typed-react-router-dom';
-import { routes } from './routes';
+import { Routes } from "react-router-dom";
+import { TypedRoute, RouteComponent } from "typed-react-router-dom";
+import { routes } from "./routes";
 
 <Routes>
   <TypedRoute path={routes.HOME.path} element={<Home />} />
   <RouteComponent path={routes.USER_DETAIL.path} element={<UserDetail />} />
-</Routes>
+</Routes>;
 ```
 
 ---
@@ -235,8 +235,8 @@ import { routes } from './routes';
 ### `useTypedSearchParams(route)`
 
 ```tsx
-import { useTypedSearchParams } from 'typed-react-router-dom';
-import { routes } from './routes';
+import { useTypedSearchParams } from "typed-react-router-dom";
+import { routes } from "./routes";
 
 function UserDetail() {
   const [query, setQuery] = useTypedSearchParams(routes.USER_DETAIL);
@@ -244,9 +244,7 @@ function UserDetail() {
   return (
     <div>
       <p>Current Tab: {query.tab}</p>
-      <button onClick={() => setQuery({ tab: 'settings' })}>
-        Switch to Settings
-      </button>
+      <button onClick={() => setQuery({ tab: "settings" })}>Switch to Settings</button>
     </div>
   );
 }
@@ -257,8 +255,8 @@ function UserDetail() {
 ### `useTypedParams(route)`
 
 ```tsx
-import { useTypedParams } from 'typed-react-router-dom';
-import { routes } from './routes';
+import { useTypedParams } from "typed-react-router-dom";
+import { routes } from "./routes";
 
 function UserDetail() {
   const { id } = useTypedParams(routes.USER_DETAIL);
@@ -271,14 +269,14 @@ function UserDetail() {
 ### `useTypedMatch(routesMap)`
 
 ```tsx
-import { useTypedMatch } from 'typed-react-router-dom';
-import { routes } from './routes';
+import { useTypedMatch } from "typed-react-router-dom";
+import { routes } from "./routes";
 
 function Breadcrumb() {
   const { route, params, query } = useTypedMatch(routes);
   return (
     <div>
-      <span>{route?.name ?? 'Unknown'}</span>
+      <span>{route?.name ?? "Unknown"}</span>
       <span>{query.tab}</span>
     </div>
   );
@@ -290,12 +288,12 @@ function Breadcrumb() {
 ### `AppRouterService` (programmatic navigation)
 
 ```ts
-import { appRouter } from 'typed-react-router-dom';
-import { routes } from './routes';
+import { appRouter } from "typed-react-router-dom";
+import { routes } from "./routes";
 
 // Navigate from outside a React component (e.g., in an API service):
-appRouter.navigateToRoute(routes.USER_DETAIL, { id: '42' }, { tab: 'profile' });
-appRouter.navigateToURL('/some-path', /* newTab */ true);
+appRouter.navigateToRoute(routes.USER_DETAIL, { id: "42" }, { tab: "profile" });
+appRouter.navigateToURL("/some-path", /* newTab */ true);
 ```
 
 ---
@@ -303,15 +301,15 @@ appRouter.navigateToURL('/some-path', /* newTab */ true);
 ### `RouteHelper` (low-level utilities)
 
 ```ts
-import { RouteHelper } from 'typed-react-router-dom';
+import { RouteHelper } from "typed-react-router-dom";
 
-RouteHelper.constructHref(routes.USER_DETAIL, { id: '42' }, { tab: 'settings' });  // '/users/42?tab=settings'
-RouteHelper.extractParamsFromPath(routes.USER_DETAIL, '/users/99');                 // { id: '99' }
-RouteHelper.extractParamKeysFromPath('/users/:id/posts/:postId');                   // ['id', 'postId']
-RouteHelper.extractQueryParams('?tab=settings&page=2');                             // { tab: 'settings', page: '2' }
-RouteHelper.getRouteMatchByUrl(routes, '/users/5');                                 // routes.USER_DETAIL
-RouteHelper.getAllRoutesAsArray(routes);                                            // Route[]
-RouteHelper.isChildOf(routes, '/profile', '/');                                     // true | false
+RouteHelper.constructHref(routes.USER_DETAIL, { id: "42" }, { tab: "settings" }); // '/users/42?tab=settings'
+RouteHelper.extractParamsFromPath(routes.USER_DETAIL, "/users/99"); // { id: '99' }
+RouteHelper.extractParamKeysFromPath("/users/:id/posts/:postId"); // ['id', 'postId']
+RouteHelper.extractQueryParams("?tab=settings&page=2"); // { tab: 'settings', page: '2' }
+RouteHelper.getRouteMatchByUrl(routes, "/users/5"); // routes.USER_DETAIL
+RouteHelper.getAllRoutesAsArray(routes); // Route[]
+RouteHelper.isChildOf(routes, "/profile", "/"); // true | false
 ```
 
 ---
@@ -319,12 +317,15 @@ RouteHelper.isChildOf(routes, '/profile', '/');                                 
 ## Route Interface
 
 ```ts
-interface Route<TPath extends string = string, TQuery extends Record<string, any> = Record<string, any>> {
-  path: TPath;                    // Route path pattern (e.g., '/users/:id')
-  name?: string;                  // Human-readable display name
-  parent?: string;                // Parent route path for breadcrumbs / nesting
-  icon?: ComponentType<any>;      // Optional icon component
-  queryType?: TQuery;             // Type carrier for compile-time query params
+interface Route<
+  TPath extends string = string,
+  TQuery extends Record<string, any> = Record<string, any>,
+> {
+  path: TPath; // Route path pattern (e.g., '/users/:id')
+  name?: string; // Human-readable display name
+  parent?: string; // Parent route path for breadcrumbs / nesting
+  icon?: ComponentType<any>; // Optional icon component
+  queryType?: TQuery; // Type carrier for compile-time query params
 }
 ```
 

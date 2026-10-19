@@ -1,18 +1,18 @@
-import type React from 'react';
-import type { PathRouteProps } from 'react-router-dom';
-import { Route as ReactRouterRoute } from 'react-router-dom';
-import type { Route } from './types';
+import type React from "react";
+import type { PathRouteProps } from "react-router-dom";
+import { Route as ReactRouterRoute } from "react-router-dom";
+import type { Route } from "./types";
 
 /**
  * Props for the `<TypedRoute />` / `<RouteComponent />` component.
  * Replaces react-router-dom's `<Route />` while binding `path` directly to a type-safe `Route` object.
  * All standard Route props (`element`, `Component`, `children`, `loader`, `action`, etc.) are supported.
  */
-export type TypedRouteProps<R extends Route> = Omit<PathRouteProps, 'path'> & {
-    /**
-     * The type-safe path string derived directly from a `Route` object (e.g. `path={routes.USER_DETAIL.path}`).
-     */
-    path: R['path'];
+export type TypedRouteProps<R extends Route> = Omit<PathRouteProps, "path"> & {
+  /**
+   * The type-safe path string derived directly from a `Route` object (e.g. `path={routes.USER_DETAIL.path}`).
+   */
+  path: R["path"];
 };
 
 /**
@@ -40,7 +40,7 @@ export type TypedRouteProps<R extends Route> = Omit<PathRouteProps, 'path'> & {
  * ```
  */
 export const TypedRoute = ReactRouterRoute as unknown as <R extends Route>(
-    props: TypedRouteProps<R>
+  props: TypedRouteProps<R>,
 ) => React.ReactElement;
 
 /**

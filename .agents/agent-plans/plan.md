@@ -5,6 +5,7 @@ This plan outlines the phase-by-phase roadmap to transform the current codebase 
 ---
 
 ## Overview & Objectives
+
 - **Goal**: Convert hardcoded single-app route logic into a generic, type-safe library (`typed-react-router-dom`).
 - **Target Audience**: React applications using TypeScript and `react-router-dom` (v6 / v7).
 - **Key Features**:
@@ -21,6 +22,7 @@ This plan outlines the phase-by-phase roadmap to transform the current codebase 
 ## Phase Breakdown
 
 ### Phase 1: Infrastructure & Package Setup
+
 - **Objectives**:
   - Add TypeScript compiler configuration (`tsconfig.json`).
   - Configure `tsup` bundler for generating dual ESM/CJS outputs and `.d.ts` declaration files.
@@ -31,6 +33,7 @@ This plan outlines the phase-by-phase roadmap to transform the current codebase 
   - Install dependencies using `pnpm`.
 
 ### Phase 2: Core Engine & Type Decoupling
+
 - **Objectives**:
   - **`types.ts`**: Make route definitions generic.
     - Define core interfaces: `BaseRoute`, `RouteMap`, `RouteParams<R>`, `DynamicRouteParam<R>`.
@@ -44,6 +47,7 @@ This plan outlines the phase-by-phase roadmap to transform the current codebase 
   - **`AppRouterService.ts`**: Decouple `AppRouterService` from hardcoded routes; allow instantiation or dynamic route parameter navigation.
 
 ### Phase 3: React Components & Custom Hooks
+
 - **Objectives**:
   - **`<AppLink />`**: Ensure `<AppLink route={...} params={...} />` uses `generatePath` / `constructHref` and provides strict autocompletion for required parameters based on the passed route.
   - **React Hooks**:
@@ -54,6 +58,7 @@ This plan outlines the phase-by-phase roadmap to transform the current codebase 
     - Optional builder pattern returning bound components (`TypedLink`), hooks (`useNavigate`, `useParams`), and router service for zero-boilerplate consumption in user projects.
 
 ### Phase 4: Automated Testing & Verification
+
 - **Objectives**:
   - Setup Vitest with `@testing-library/react` and DOM environment (`happy-dom`).
   - Write test suites:
@@ -64,6 +69,7 @@ This plan outlines the phase-by-phase roadmap to transform the current codebase 
   - Verify build outputs (`pnpm build`) and validate generated TypeScript declaration files.
 
 ### Phase 5: Documentation, Cleanup & Package Readiness
+
 - **Objectives**:
   - Move app-specific route examples from `_RouteDefinitions.ts` into test fixtures / example documentation.
   - Create a comprehensive `README.md` with:
@@ -75,6 +81,7 @@ This plan outlines the phase-by-phase roadmap to transform the current codebase 
 ---
 
 ## Verification Plan
+
 1. **TypeScript Check**: `pnpm tsc --noEmit` runs with 0 errors.
 2. **Build Check**: `pnpm build` creates `dist/index.js`, `dist/index.mjs`, and `dist/index.d.ts`.
 3. **Unit Tests**: `pnpm test` passes all route helper, component, and hook tests.
